@@ -1,17 +1,138 @@
 ---
+import Layout from '../layouts/Layout.astro';
 
+// Ein einziges Maskenraster (7×5). Die Linien entstehen aus den gap-Zwischenräumen,
+// jede Zelle ist ein Maskenrahmen (overflow-hidden). Animiert man später die Zellgrößen,
+// bewegen sich Linien UND Inhalte zusammen.
+const projects = [
+  { name: 'Visitenkarten',           img: '/projects/visitenkarten.jpg',           r: 2, c: 4, zoom: false },
+  { name: 'Logo Animation',          img: '/projects/logo-animation.png',          r: 2, c: 6, zoom: false },
+  { name: 'Motion Musikvideo',       img: '/projects/motion-musikvideo.png',       r: 3, c: 7, zoom: false },
+  { name: 'Foto Langzeitbelichtung', img: '/projects/foto-langzeitbelichtung.jpg', r: 4, c: 5, zoom: true  },
+  { name: '3D Ayra',                 img: '/projects/3d-ayra.png',                 r: 4, c: 6, zoom: false },
+  { name: 'Portrait Foto',           img: '/projects/portrait-foto.jpg',           r: 5, c: 2, zoom: false },
+  { name: 'Imagefilm',              img: '/projects/imagefilm.png',               r: 5, c: 3, zoom: true  },
+];
+
+const nav = [
+  { label: 'Work',    href: '/work',    c: 5 },
+  { label: 'About',   href: '/about',   c: 6 },
+  { label: 'Contact', href: '/contact', c: 7 },
+];
+
+const letters = [
+  { ch: 'P', r: 3, c: 1, l: 2.646,  t: 8.045  },
+  { ch: 'O', r: 4, c: 1, l: 8.730,  t: -7.128 },
+  { ch: 'R', r: 4, c: 2, l: 0.355,  t: -7.128 },
+  { ch: 'T', r: 3, c: 2, l: 5.294,  t: 8.045  },
+  { ch: 'F', r: 3, c: 3, l: -4.050, t: 8.045  },
+  { ch: 'O', r: 3, c: 3, l: 1.691,  t: 8.045  },
+  { ch: 'L', r: 4, c: 3, l: 6.680,  t: -7.128 },
+  { ch: 'I', r: 4, c: 4, l: -3.567, t: -7.128 },
+  { ch: 'O', r: 3, c: 4, l: 1.366,  t: 8.045  },
+];
+
+const rows = [1, 2, 3, 4, 5];
+const cols = [1, 2, 3, 4, 5, 6, 7];
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout title="Isabelle Reinhardt — Mediendesign Portfolio">
+  <section class="relative bg-ink text-off">
+
+    <!-- ===== DESKTOP: EIN Maskenraster (Linien = gap, Zellen = Masken), feste Bildschirmhöhe ===== -->
+    <div class="hidden h-screen grid-cols-7 grid-rows-5 gap-px bg-line overflow-hidden md:grid">
+      {rows.map((r) => cols.map((c) => {
+        const img = projects.find((p) => p.r === r && p.c === c);
+        const cellLetters = letters.filter((L) => L.r === r && L.c === c);
+        const navItem = r === 1 ? nav.find((n) => n.c === c) : null;
+        return (
+          <div class="relative overflow-hidden bg-ink">
+
+            {r === 1 && c === 1 && (
+              <a href="/" aria-label="Startseite" class="flex h-full w-full items-center justify-center">
+                <img src="/logo/NeonLogo-white.png" alt="Isabelle Reinhardt" class="h-11 w-auto" />
+              </a>
+            )}
+
+            {navItem && (
+              <a href={navItem.href} class="flex h-full w-full items-center justify-center font-mono text-sm uppercase tracking-[0.14em] text-off transition-colors hover:text-neon">
+                {navItem.label}
+              </a>
+            )}
+
+            {img && (
+              <a href="/work" data-project={img.name} class="group block h-full w-full">
+                <img
+                  src={img.img}
+                  alt={img.name}
+                  loading="lazy"
+                  class={`h-full w-full object-cover opacity-70 transition-opacity duration-300 group-hover:opacity-100 ${img.zoom ? 'scale-150' : ''}`}
+                />
+              </a>
+            )}
+
+            {cellLetters.map((L) => (
+              <span
+                class="pointer-events-none absolute font-display font-black uppercase leading-none text-neon"
+                style={`left:${L.l}vw; top:${L.t}vh; font-size:12.1vw;`}
+              >
+                {L.ch}
+              </span>
+            ))}
+
+            {r === 5 && c === 1 && (
+              <span id="hoverTitle" class="pointer-events-none absolute bottom-3 left-3 font-mono text-[12px] lowercase tracking-wide text-neon"></span>
+            )}
+
+            {r === 5 && c === 7 && (
+              <a href="/impressum" class="absolute bottom-3 right-3 font-mono text-[11px] uppercase tracking-[0.14em] text-off transition-colors hover:text-neon">
+                Impressum
+              </a>
+            )}
+          </div>
+        );
+      }))}
+    </div>
+
+    <!-- ===== MOBILE ===== -->
+    <div class="md:hidden">
+      <div class="flex items-center justify-between px-6 py-6">
+        <img src="/logo/NeonLogo-white.png" alt="Isabelle Reinhardt" class="h-10 w-auto" />
+        <nav>
+          <ul class="flex gap-5 font-mono text-xs uppercase tracking-[0.14em]">
+            {nav.map((n) => (
+              <li><a href={n.href} class="text-off transition-colors hover:text-neon">{n.label}</a></li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+
+      <div class="px-6 pb-8">
+        <h1 class="font-display text-[clamp(3.5rem,20vw,6rem)] font-black uppercase leading-none tracking-tight text-neon">
+          Portfolio
+        </h1>
+        <div class="mt-8 grid grid-cols-2 gap-px bg-line">
+          {projects.map((p) => (
+            <a href="/work" class="group relative block aspect-square overflow-hidden bg-ink">
+              <img src={p.img} alt={p.name} loading="lazy" class={`h-full w-full object-cover opacity-70 ${p.zoom ? 'scale-150' : ''}`} />
+            </a>
+          ))}
+        </div>
+        <div class="mt-6 text-right">
+          <a href="/impressum" class="font-mono text-[11px] uppercase tracking-[0.14em] text-off">Impressum</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  // Beim Hovern über ein Projekt dessen Titel unten links anzeigen
+  const ht = document.getElementById('hoverTitle');
+  if (ht) {
+    document.querySelectorAll('a[data-project]').forEach((el) => {
+      el.addEventListener('mouseenter', () => { ht.textContent = el.getAttribute('data-project') || ''; });
+      el.addEventListener('mouseleave', () => { ht.textContent = ''; });
+    });
+  }
+</script>
