@@ -20,16 +20,51 @@ const nav = [
   { label: 'Contact', href: '/contact', c: 7 },
 ];
 
+// ===== Mobile-Raster (4 Spalten, ALLE Kacheln gleich groß / quadratisch) =====
+// Scrollbares Raster; der verschwommene PORTFOLIO-Schriftzug liegt FIXIERT darüber (siehe Markup).
+const P = (name) => projects.find((p) => p.name === name)!;
+
+// Bild-Kacheln füllen die 'img'-Plätze der Reihe nach (oben→unten, links→rechts) — Anordnung wie Figma.
+const mImgOrder = ['Portrait Foto', 'Foto Langzeitbelichtung', 'Logo Animation', '3D Ayra', 'Imagefilm', 'Motion Musikvideo', 'Visitenkarten'];
+
+// Layout-Matrix (je 4 Kacheln): 'logo' · 'nav' · 'img' · 'impr' · '' (leer)
+const mLayout = [
+  ['logo', 'nav', 'nav', 'nav'],   // Logo links + WORK/ABOUT/CONTACT
+  ['',     '',    'img', ''  ],
+  ['',     '',    '',    ''  ],
+  ['',     'img', '',    ''  ],
+  ['img',  '',    '',    'img'],
+  ['',     'img', '',    ''  ],
+  ['',     'img', '',    'img'],
+  ['',     '',    '',    'impr'],
+];
+let _img = 0, _nav = 0;
+const mCells: any[] = mLayout.flatMap((row) => row.map((t) => {
+  if (t === 'img') return { t, p: P(mImgOrder[_img++]) };
+  if (t === 'nav') return { t, item: nav[_nav++] };
+  return { t };
+}));
+
+// PORTFOLIO ist an die waagerechte Gridlinie (zwischen Zeile 3 und 4) geankert und
+// skaliert als EINE Einheit mit der Fensterbreite (font-size in vw). Die vertikalen
+// Offsets stehen in em (= relativ zur Schriftgröße), damit beim Skalieren nichts
+// auseinanderläuft und der Schriftzug an der Linie "zerschnitten" bleibt:
+//   Zeile 3 (y=389): Unterkante an der Linie  → bottom  (PF_R3)
+//   Zeile 4 (y=425): Oberkante  an der Linie  → top     (PF_R4)
+// Größe zentral über PF_SIZE · Horizontales je Buchstabe über l (vw).
+const PF_SIZE = '12.1vw';         // eine Stelle für die Schriftzug-Größe
+const PF_R3   = 'bottom:-0.339em'; // Zeile-3-Buchstaben an der Linie (von oben)
+const PF_R4   = 'top:-0.465em';    // Zeile-4-Buchstaben an der Linie (von unten)
 const letters = [
-  { ch: 'P', r: 3, c: 1, l: 2.646,  t: 8.045  },
-  { ch: 'O', r: 4, c: 1, l: 8.730,  t: -7.128 },
-  { ch: 'R', r: 4, c: 2, l: 0.355,  t: -7.128 },
-  { ch: 'T', r: 3, c: 2, l: 5.294,  t: 8.045  },
-  { ch: 'F', r: 3, c: 3, l: -4.050, t: 8.045  },
-  { ch: 'O', r: 3, c: 3, l: 1.691,  t: 8.045  },
-  { ch: 'L', r: 4, c: 3, l: 6.680,  t: -7.128 },
-  { ch: 'I', r: 4, c: 4, l: -3.567, t: -7.128 },
-  { ch: 'O', r: 3, c: 4, l: 1.366,  t: 8.045  },
+  { ch: 'P', r: 3, c: 1, l: 2.646  },
+  { ch: 'O', r: 4, c: 1, l: 8.730  },
+  { ch: 'R', r: 4, c: 2, l: 0.223  },
+  { ch: 'T', r: 3, c: 2, l: 6.162  },
+  { ch: 'F', r: 3, c: 3, l: -3.182 },
+  { ch: 'O', r: 3, c: 3, l: 1.558  },
+  { ch: 'L', r: 4, c: 3, l: 8.548  },
+  { ch: 'I', r: 4, c: 4, l: 0      },
+  { ch: 'O', r: 3, c: 4, l: 2.299  },
 ];
 
 const rows = [1, 2, 3, 4, 5];
@@ -55,7 +90,7 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
             )}
 
             {navItem && (
-              <a href={navItem.href} class="flex h-full w-full items-center justify-center font-mono text-sm uppercase tracking-[0.14em] text-off transition-colors hover:text-neon">
+              <a href={navItem.href} class="flex h-full w-full items-center justify-center font-display font-medium text-sm uppercase tracking-[0.2em] text-off transition-colors hover:text-neon">
                 {navItem.label}
               </a>
             )}
@@ -74,18 +109,18 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
             {cellLetters.map((L) => (
               <span
                 class="pointer-events-none absolute font-display font-black uppercase leading-none text-neon"
-                style={`left:${L.l}vw; top:${L.t}vh; font-size:12.1vw;`}
+                style={`left:${L.l}vw; ${L.r === 3 ? PF_R3 : PF_R4}; font-size:${PF_SIZE};`}
               >
                 {L.ch}
               </span>
             ))}
 
             {r === 5 && c === 1 && (
-              <span id="hoverTitle" class="pointer-events-none absolute bottom-3 left-3 font-mono text-[12px] lowercase tracking-wide text-neon"></span>
+              <div class="pointer-events-none flex h-full w-full items-center justify-center"><span id="hoverTitle" class="font-display font-medium text-sm lowercase tracking-[0.2em] text-neon">lookbook</span></div>
             )}
 
             {r === 5 && c === 7 && (
-              <a href="/impressum" class="absolute bottom-3 right-3 font-mono text-[11px] uppercase tracking-[0.14em] text-off transition-colors hover:text-neon">
+              <a href="/impressum" class="flex h-full w-full items-center justify-center font-display font-medium text-sm uppercase tracking-[0.2em] text-off transition-colors hover:text-neon">
                 Impressum
               </a>
             )}
@@ -94,45 +129,81 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
       }))}
     </div>
 
-    <!-- ===== MOBILE ===== -->
-    <div class="md:hidden">
-      <div class="flex items-center justify-between px-6 py-6">
-        <img src="/logo/NeonLogo-white.png" alt="Isabelle Reinhardt" class="h-10 w-auto" />
-        <nav>
-          <ul class="flex gap-5 font-mono text-xs uppercase tracking-[0.14em]">
-            {nav.map((n) => (
-              <li><a href={n.href} class="text-off transition-colors hover:text-neon">{n.label}</a></li>
-            ))}
-          </ul>
-        </nav>
-      </div>
+    <!-- ===== MOBILE: Maskenraster (4 Spalten, gleich große Kacheln) + fixierter PORTFOLIO ===== -->
+    <div class="grid grid-cols-4 gap-px bg-line md:hidden">
+      {mCells.map((cell) => (
+          <div class="relative flex aspect-square items-center justify-center overflow-hidden bg-ink">
 
-      <div class="px-6 pb-8">
-        <h1 class="font-display text-[clamp(3.5rem,20vw,6rem)] font-black uppercase leading-none tracking-tight text-neon">
-          Portfolio
-        </h1>
-        <div class="mt-8 grid grid-cols-2 gap-px bg-line">
-          {projects.map((p) => (
-            <a href="/work" class="group relative block aspect-square overflow-hidden bg-ink">
-              <img src={p.img} alt={p.name} loading="lazy" class={`h-full w-full object-cover opacity-70 ${p.zoom ? 'scale-150' : ''}`} />
-            </a>
-          ))}
-        </div>
-        <div class="mt-6 text-right">
-          <a href="/impressum" class="font-mono text-[11px] uppercase tracking-[0.14em] text-off">Impressum</a>
-        </div>
-      </div>
+            {cell.t === 'logo' && (
+              <a href="/" aria-label="Startseite" class="flex h-full w-full items-center justify-center">
+                <img src="/logo/NeonLogo-white.png" alt="Isabelle Reinhardt" class="h-8 w-auto" />
+              </a>
+            )}
+
+            {cell.t === 'nav' && (
+              <a href={cell.item.href} class="flex h-full w-full items-center justify-center font-display font-medium text-[2.6vw] uppercase tracking-[0.12em] text-off transition-colors hover:text-neon">
+                {cell.item.label}
+              </a>
+            )}
+
+            {cell.t === 'img' && (
+              <a href="/work" data-name={cell.p.name} class="m-proj relative block h-full w-full">
+                <img
+                  src={cell.p.img}
+                  alt={cell.p.name}
+                  loading="lazy"
+                  class={`m-img h-full w-full object-cover opacity-70 transition-opacity duration-300 ${cell.p.zoom ? 'scale-150' : ''}`}
+                />
+                <span class="m-title pointer-events-none absolute inset-0 flex items-center justify-center p-1.5 text-center font-display font-medium text-[2.4vw] lowercase leading-tight tracking-[0.1em] text-neon opacity-0 transition-opacity duration-300">
+                  {cell.p.name === 'Foto Langzeitbelichtung' ? (
+                    <Fragment>Foto Langzeit<br />belichtung</Fragment>
+                  ) : cell.p.name}
+                </span>
+              </a>
+            )}
+
+            {cell.t === 'impr' && (
+              <a href="/impressum" class="flex h-full w-full items-center justify-center font-display font-medium text-[2.4vw] uppercase tracking-[0.12em] text-off transition-colors hover:text-neon">
+                Impressum
+              </a>
+            )}
+          </div>
+      ))}
+    </div>
+
+    <!-- Fixierter, verschwommener PORTFOLIO-Schriftzug (nur Mobile): fix in der Mitte der 3. Rasterreihe
+         (2,5 Reihen × 25vw = 62.5vw), bleibt beim Scrollen an Ort und Stelle -->
+    <div class="pointer-events-none fixed inset-x-0 top-[62.5vw] z-40 flex -translate-y-1/2 justify-center md:hidden">
+      <span class="font-display font-black uppercase leading-none tracking-tight text-neon" style="font-size: 16vw; filter: blur(1.6vw);">Portfolio</span>
     </div>
   </section>
 </Layout>
 
 <script>
-  // Beim Hovern über ein Projekt dessen Titel unten links anzeigen
+  // Desktop: Beim Hovern über ein Projekt dessen Titel unten links anzeigen
   const ht = document.getElementById('hoverTitle');
   if (ht) {
     document.querySelectorAll('a[data-project]').forEach((el) => {
-      el.addEventListener('mouseenter', () => { ht.textContent = el.getAttribute('data-project') || ''; });
-      el.addEventListener('mouseleave', () => { ht.textContent = ''; });
+      el.addEventListener('mouseenter', () => { ht.textContent = el.getAttribute('data-project') || 'lookbook'; });
+      el.addEventListener('mouseleave', () => { ht.textContent = 'lookbook'; });
     });
   }
+
+  // Mobile: 1. Klick auf ein Bild → Titel + 50% Deckkraft; 2. Klick → Projekt öffnen.
+  document.querySelectorAll('.m-proj').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      if (!a.classList.contains('is-open')) {
+        e.preventDefault();
+        document.querySelectorAll('.m-proj.is-open').forEach((o) => o.classList.remove('is-open'));
+        a.classList.add('is-open');
+      }
+      // bereits offen → Standard-Klick lässt den Link öffnen
+    });
+  });
 </script>
+
+<style is:global>
+  /* Mobile-Projektkacheln: geöffneter Zustand (nach dem 1. Klick) */
+  .m-proj.is-open .m-img   { opacity: 0.5; }
+  .m-proj.is-open .m-title { opacity: 1; }
+</style>

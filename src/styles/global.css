@@ -7,10 +7,10 @@
    ========================================================= */
 @theme {
   /* Farben */
-  --color-ink:   #0E0E10;   /* Schwarz  – Grund & Typo   */
+  --color-ink:   #000000;   /* Schwarz (Vollton) – Grund & Typo */
   --color-off:   #FEFEFE;   /* Off-White – Text auf Schwarz */
   --color-beige: #E7D9C9;   /* warme Fläche              */
-  --color-neon:  #CBF43C;   /* Akzent (Neongrün)         */
+  --color-neon:  #97E818;   /* Akzent (Neongrün)         */
   --color-line:  #2A2A2C;   /* dünne Rasterlinien        */
 
   /* Schriften */
