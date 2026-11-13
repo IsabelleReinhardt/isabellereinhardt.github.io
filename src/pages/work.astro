@@ -561,12 +561,16 @@ const categories = [
     return idx;
   }
 
-  // Tippen auf einen Titel: sanft dorthin scrollen (Titel direkt unter den Header)
+  // Tippen auf einen Titel: sanft so weit scrollen, dass dieser Titel auf der Auslöse-Linie liegt
+  // (→ genau diese Kategorie wird die offene). Rechnet die oben höher liegende Linie mit ein.
   function mobileToggle(i) {
-    const headerH = window.innerWidth * 0.25;             // Mobile-Header = 25vw
-    const curTop = cats[i].querySelector('.wp-cat-head').getBoundingClientRect().top;
+    const hr = cats[i].querySelector('.wp-cat-head').getBoundingClientRect();
+    const D = window.scrollY + hr.top + hr.height / 2;    // Titelmitte im Dokument
+    const topLine = window.innerWidth * 0.625, cy = window.innerHeight / 2;
+    let y = (D - topLine) / 2;                            // Linie liegt noch oben: topLine + y = D - y
+    if (topLine + y > cy) y = D - cy;                     // sonst: Bildschirmmitte
     const maxS = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    smoothScrollTo(Math.max(0, Math.min(window.scrollY + curTop - headerH, maxS)), 520);
+    smoothScrollTo(Math.max(0, Math.min(y, maxS)), 520);
   }
 
   let mticking = false;
