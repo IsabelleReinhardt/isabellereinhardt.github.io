@@ -520,7 +520,7 @@ const categories = [
     resetFooter();
   }
 
-  // ===== Mobile: Tap-Akkordeon + Vergrößern beim Scrollen =====
+  // ===== Mobile: Kategorie in der Bildschirmmitte ist offen; Tippen scrollt hin =====
   function mgallery(i) { return cats[i] && cats[i].querySelector('.wp-cat-scroll'); }
 
   // Eigener sanfter Scroll: läuft ~500ms und trifft das Ziel auch dann, wenn die
@@ -538,130 +538,59 @@ const categories = [
     scrollRAF = requestAnimationFrame(step);
   }
 
-  // Nach Tippen/automatischem Öffnen kurz keine Automatik (sonst kämpft sie mit der Scroll-Animation)
-  let autoLockUntil = 0;
-
-  function mobileToggle(i) {
-    autoLockUntil = performance.now() + 900;
-    const prev = active;
-    if (i === prev) {   // gleiche Kategorie erneut getippt → zuklappen
-      cats[prev].classList.remove('is-open');
-      const g0 = mgallery(prev); if (g0) g0.style.height = '0px';
-      active = -1; wp.classList.remove('has-open');
-      requestAnimationFrame(scaleLabels);
-      return;
-    }
-    // Ziel-Scrollposition bestimmen, sodass die getippte Headline direkt unter den
-    // Header rutscht — analytisch aus der aktuellen (noch nicht animierten) Lage,
-    // damit die Messung unabhängig von der Höhen-Animation korrekt ist.
-    labels.forEach((l) => { l.style.transform = ''; });   // ohne Scroll-Skalierung messen
-    const headerH = window.innerWidth * 0.25;             // Mobile-Header = 25vw
-    // Oberkante der KATEGORIE-ZEILE (nicht des Labels, das mittig darin sitzt) unter den Header
-    const curTop = cats[i].querySelector('.wp-cat-head').getBoundingClientRect().top;
-    const prevG = prev >= 0 ? mgallery(prev) : null;
-    const prevGH = prevG ? prevG.getBoundingClientRect().height : 0;
-    const aboveShift = (prev >= 0 && prev < i) ? prevGH : 0; // schließt eine Kategorie darüber → alles rutscht hoch
-    const gi = mgallery(i);
-    const newGH = gi ? gi.scrollHeight : 0;
-    const newScrollH = document.documentElement.scrollHeight - prevGH + newGH;
-    const maxS = Math.max(0, newScrollH - window.innerHeight);
-    const target = Math.max(0, Math.min(window.scrollY + curTop - aboveShift - headerH, maxS));
-
-    // umschalten
-    if (prev >= 0) { cats[prev].classList.remove('is-open'); if (prevG) prevG.style.height = '0px'; }
+  // ---- Mobil: alle Galerien liegen offen im Fluss (keine Höhen-Animation → kein Springen beim
+  // Scrollen). „Geöffnet" ist die Kategorie, die mittig im Bildschirm liegt: Ihr Titel wird scharf,
+  // ihre Projekte voll sichtbar; die anderen sind abgedunkelt/unscharf. Das wird bei JEDEM
+  // Scroll-Bild (requestAnimationFrame) neu bestimmt – reines Umschalten von Klassen, butterweich.
+  function setActiveM(i) {
+    if (i === active) return;
+    if (active >= 0) cats[active].classList.remove('is-open');
     active = i;
-    cats[i].classList.add('is-open');
-    if (gi) gi.style.height = newGH + 'px';
-    wp.classList.add('has-open');
-    scaleLabels();
-    smoothScrollTo(target, 520);
+    if (i >= 0) { cats[i].classList.add('is-open'); wp.classList.add('has-open'); }
+    else wp.classList.remove('has-open');
   }
-
-  // Das Kategoriewort in der Reihe direkt unter dem Header wird am größten.
-  // NUR wenn keine Kategorie offen ist — sonst alle auf Normalgröße zurück.
-  function scaleLabels() {
-    if (active >= 0) { for (const l of labels) l.style.transform = ''; return; }
-    const vw = window.innerWidth / 100;
-    const row = 25 * vw, head = 25 * vw;   // MobileHeader + Reihe = je 25vw
-    const peak = head + row / 2;
-    for (const l of labels) {
-      const r = l.getBoundingClientRect();
-      const c = r.top + r.height / 2;
-      const t = Math.max(0, 1 - Math.abs(c - peak) / row);
-      l.style.transform = 'scale(' + (1 + 0.28 * t).toFixed(3) + ')';
-    }
-  }
-
-  // ---- Automatisch öffnen: Kategorie, die mittig im Bildschirm liegt ----
-  // Läuft erst, wenn das Scrollen kurz pausiert (sonst würde die Seite unter dem Finger springen).
-  // Beim Umschalten bleibt die neue Überschrift an ihrer Stelle stehen: Während die Galerien
-  // auf-/zuklappen, wird die Scrollposition jedes Bild nachgeführt.
-  let autoT = 0;
-  let lastCheckY = 0;   // Scrollposition beim letzten Prüfen (für die Scrollrichtung)
-  function autoOpen(i) {
-    const prev = active;
-    const head = cats[i].querySelector('.wp-cat-head');
-    labels.forEach((l) => { l.style.transform = ''; });
-    const top0 = head.getBoundingClientRect().top;
-    if (prev >= 0) { cats[prev].classList.remove('is-open'); const g = mgallery(prev); if (g) g.style.height = '0px'; }
-    active = i;
-    cats[i].classList.add('is-open');
-    const gi = mgallery(i); if (gi) gi.style.height = gi.scrollHeight + 'px';
-    wp.classList.add('has-open');
-    const t0 = performance.now();
-    autoLockUntil = t0 + 380;
-    const keep = () => {
-      const d = head.getBoundingClientRect().top - top0;
-      if (Math.abs(d) > 0.5) window.scrollBy(0, d);
-      if (performance.now() - t0 < 340) requestAnimationFrame(keep);
-      else lastCheckY = window.scrollY;   // Ausgleichs-Scrollen zählt nicht als Richtung
-    };
-    requestAnimationFrame(keep);
-  }
-  function autoCheck() {
-    if (performance.now() < autoLockUntil || footerP > 0.5) return;
+  function pickCenter() {
+    if (!cats.length) return -1;
     // Auslöse-Linie = Bildschirmmitte. Ganz oben (wo darüber kein Platz zum Scrollen ist) liegt sie
     // höher – auf der ersten Kategorie – und wandert mit dem Scrollen zur Mitte. So kommen auch die
-    // oberen Kategorien dran.
-    const y = window.scrollY;
+    // oberen Kategorien dran. (Kein Rückkopplungs-Problem mehr, weil sich das Layout nie verschiebt.)
     const topLine = window.innerWidth * 0.625;             // Mitte der ersten Kategoriezeile bei scrollY = 0
-    const cy = Math.min(window.innerHeight / 2, topLine + y);
+    const cy = Math.min(window.innerHeight / 2, topLine + window.scrollY);
     let idx = cats.findIndex((c) => { const r = c.getBoundingClientRect(); return r.top <= cy && r.bottom > cy; });
-    // Unten: Mitte schon unter der letzten Kategorie (oder der Footer kommt) → letzte öffnen.
-    if (idx < 0 && cats.length && (cats[cats.length - 1].getBoundingClientRect().bottom <= cy || footerP > 0.01)) idx = cats.length - 1;
-    // Nur in Scrollrichtung umschalten (verhindert Hin-und-her-Springen, wenn sich beim Umschalten
-    // die Scrollposition verschiebt).
-    const dir = Math.sign(y - lastCheckY);
-    lastCheckY = y;
-    if (idx < 0 || idx === active) return;
-    if (active >= 0 && !((dir > 0 && idx > active) || (dir < 0 && idx < active))) return;
-    autoOpen(idx);
+    if (idx < 0) idx = cats[cats.length - 1].getBoundingClientRect().bottom <= cy ? cats.length - 1 : 0;
+    return idx;
+  }
+
+  // Tippen auf einen Titel: sanft dorthin scrollen (Titel direkt unter den Header)
+  function mobileToggle(i) {
+    const headerH = window.innerWidth * 0.25;             // Mobile-Header = 25vw
+    const curTop = cats[i].querySelector('.wp-cat-head').getBoundingClientRect().top;
+    const maxS = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    smoothScrollTo(Math.max(0, Math.min(window.scrollY + curTop - headerH, maxS)), 520);
   }
 
   let mticking = false;
   function onScrollM() {
-    clearTimeout(autoT);
-    if (performance.now() >= autoLockUntil) autoT = setTimeout(autoCheck, 90);
     if (mticking) return; mticking = true;
     requestAnimationFrame(() => {
       mticking = false;
       footerP = footerProgress(); applyFooter();   // Footer-Reveal wie Desktop (gleiche Funktionsweise)
-      if (footerP <= 0.01) scaleLabels();           // Titel-Skalierung nur, solange der Footer unten ist
+      setActiveM(pickCenter());
     });
   }
 
   const clickHandlers = [];
   function enableMobile() {
-    labels.forEach((l, i) => { const h = () => mobileToggle(i); clickHandlers[i] = h; l.addEventListener('click', h); });
+    labels.forEach((l, i) => { const h = () => mobileToggle(i); clickHandlers[i] = h; l.addEventListener('click', h); l.style.transform = ''; });
+    cats.forEach((c, i) => { const g = mgallery(i); if (g) g.style.height = ''; });
     document.addEventListener('scroll', onScrollM, { passive: true });
-    scaleLabels();
     footerP = footerProgress(); applyFooter();   // Ausgangszustand des Footers setzen
+    setActiveM(pickCenter());
   }
   function disableMobile() {
     labels.forEach((l, i) => { if (clickHandlers[i]) l.removeEventListener('click', clickHandlers[i]); l.style.transform = ''; });
     document.removeEventListener('scroll', onScrollM);
-    clearTimeout(autoT);
-    if (active >= 0) { cats[active].classList.remove('is-open'); const g = mgallery(active); if (g) g.style.height = '0px'; }
+    if (active >= 0) cats[active].classList.remove('is-open');
     active = -1; wp.classList.remove('has-open');
     resetFooter();
   }
@@ -675,7 +604,7 @@ const categories = [
   window.addEventListener('resize', () => {
     sampleCache = new WeakMap();   // Bildgrößen ändern sich → Helligkeits-Cache verwerfen
     if (mq.matches) { setPanelH(); setStickyTop(); if (active >= 0) centerOpen(active); }
-    else { if (active >= 0) { const g = mgallery(active); if (g) g.style.height = g.scrollHeight + 'px'; } scaleLabels(); }
+    else setActiveM(pickCenter());
   });
 </script>
 
@@ -911,14 +840,14 @@ const categories = [
     /* Kategorie = Akkordeon im Fluss (schiebt beim Öffnen die anderen nach unten) */
     .wp-cat { position: static; height: auto; }
     .wp-cat.is-open { height: auto; }   /* wichtig: Desktop-Festhöhe überschreiben, sonst Überlappung */
-    .wp-cat-head { position: static; height: 25vw; justify-content: center; padding-left: 0; }
+    .wp-cat-head { position: static; height: 25vw; justify-content: center; padding-left: 0; overflow: hidden; }   /* großer, offener Titel wird am Rand angeschnitten statt die Seite zu verbreitern */
     .wp-cat.is-open .wp-cat-head { height: 25vw; }
     .wp-cat-label {
       font-size: 15vw; text-align: center; filter: blur(1.2vw);
       transform-origin: center center; will-change: transform; cursor: pointer;
       transition: filter .3s ease, opacity .3s ease, transform .3s ease;
       /* Eintritt mobil: Überschriften blenden nacheinander ein (nur opacity, damit es nicht
-         mit dem scaleLabels-transform kollidiert; backwards = hält danach nicht die opacity). */
+         mit einem transform kollidiert; backwards = hält danach nicht die opacity). */
       animation: wp-fadein 0.6s ease backwards;
       animation-delay: calc(var(--i, 0) * 0.1s + 0.15s);
     }
@@ -926,7 +855,11 @@ const categories = [
     .workpage.has-open .wp-cat:not(.is-open) .wp-cat-label { filter: blur(1.2vw); opacity: 0.5; }
 
     /* Galerie: klappt im Fluss auf (Höhe per JS animiert) */
-    .wp-cat-scroll { position: static; inset: auto; display: block; height: 0; overflow: hidden; z-index: auto; pointer-events: auto; transition: height .28s ease; }   /* schneller Wechsel */
+    /* Alle Galerien liegen offen im Fluss (keine Höhen-Animation → flüssiges Scrollen).
+       Die mittige Kategorie ist „offen": Projekte voll sichtbar; die anderen gedimmt und leicht kleiner. */
+    .wp-cat-scroll { position: static; inset: auto; display: block; height: auto; overflow: visible; z-index: auto; pointer-events: auto; }
+    .wp-cat-scroll .wp-proj-layer { opacity: 0.18; transform: scale(0.94); transition: opacity .35s ease, transform .45s cubic-bezier(0.22, 1, 0.36, 1); }
+    .wp-cat.is-open .wp-cat-scroll .wp-proj-layer { opacity: 1; transform: none; }
     .wp-spacer, .wp-ghost, .wp-ghost-gap, .wp-end-spacer { display: none; }   /* mobil: Akkordeon ohne Fortsetzungen und ohne den Desktop-Auslauf am Ende (sonst lange leere Fläche unter den Projekten) */
 
     /* Projekte: vertikal gestapelt, zentriert (Figma 18-901) */
