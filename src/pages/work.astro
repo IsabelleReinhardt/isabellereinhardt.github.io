@@ -597,6 +597,7 @@ const categories = [
   // Beim Umschalten bleibt die neue Überschrift an ihrer Stelle stehen: Während die Galerien
   // auf-/zuklappen, wird die Scrollposition jedes Bild nachgeführt.
   let autoT = 0;
+  let lastCheckY = 0;   // Scrollposition beim letzten Prüfen (für die Scrollrichtung)
   function autoOpen(i) {
     const prev = active;
     const head = cats[i].querySelector('.wp-cat-head');
@@ -608,26 +609,39 @@ const categories = [
     const gi = mgallery(i); if (gi) gi.style.height = gi.scrollHeight + 'px';
     wp.classList.add('has-open');
     const t0 = performance.now();
-    autoLockUntil = t0 + 600;
+    autoLockUntil = t0 + 380;
     const keep = () => {
       const d = head.getBoundingClientRect().top - top0;
       if (Math.abs(d) > 0.5) window.scrollBy(0, d);
-      if (performance.now() - t0 < 520) requestAnimationFrame(keep);
+      if (performance.now() - t0 < 340) requestAnimationFrame(keep);
+      else lastCheckY = window.scrollY;   // Ausgleichs-Scrollen zählt nicht als Richtung
     };
     requestAnimationFrame(keep);
   }
   function autoCheck() {
-    if (performance.now() < autoLockUntil || footerP > 0.01) return;
-    // Auslöse-Linie = Bildschirmmitte (fest, damit das Umschalten stabil bleibt).
-    const cy = window.innerHeight / 2;
-    const idx = cats.findIndex((c) => { const r = c.getBoundingClientRect(); return r.top <= cy && r.bottom > cy; });
-    if (idx >= 0 && idx !== active) autoOpen(idx);
+    if (performance.now() < autoLockUntil || footerP > 0.5) return;
+    // Auslöse-Linie = Bildschirmmitte. Ganz oben (wo darüber kein Platz zum Scrollen ist) liegt sie
+    // höher – auf der ersten Kategorie – und wandert mit dem Scrollen zur Mitte. So kommen auch die
+    // oberen Kategorien dran.
+    const y = window.scrollY;
+    const topLine = window.innerWidth * 0.625;             // Mitte der ersten Kategoriezeile bei scrollY = 0
+    const cy = Math.min(window.innerHeight / 2, topLine + y);
+    let idx = cats.findIndex((c) => { const r = c.getBoundingClientRect(); return r.top <= cy && r.bottom > cy; });
+    // Unten: Mitte schon unter der letzten Kategorie (oder der Footer kommt) → letzte öffnen.
+    if (idx < 0 && cats.length && (cats[cats.length - 1].getBoundingClientRect().bottom <= cy || footerP > 0.01)) idx = cats.length - 1;
+    // Nur in Scrollrichtung umschalten (verhindert Hin-und-her-Springen, wenn sich beim Umschalten
+    // die Scrollposition verschiebt).
+    const dir = Math.sign(y - lastCheckY);
+    lastCheckY = y;
+    if (idx < 0 || idx === active) return;
+    if (active >= 0 && !((dir > 0 && idx > active) || (dir < 0 && idx < active))) return;
+    autoOpen(idx);
   }
 
   let mticking = false;
   function onScrollM() {
     clearTimeout(autoT);
-    if (performance.now() >= autoLockUntil) autoT = setTimeout(autoCheck, 160);
+    if (performance.now() >= autoLockUntil) autoT = setTimeout(autoCheck, 90);
     if (mticking) return; mticking = true;
     requestAnimationFrame(() => {
       mticking = false;
@@ -912,7 +926,7 @@ const categories = [
     .workpage.has-open .wp-cat:not(.is-open) .wp-cat-label { filter: blur(1.2vw); opacity: 0.5; }
 
     /* Galerie: klappt im Fluss auf (Höhe per JS animiert) */
-    .wp-cat-scroll { position: static; inset: auto; display: block; height: 0; overflow: hidden; z-index: auto; pointer-events: auto; transition: height .4s ease; }
+    .wp-cat-scroll { position: static; inset: auto; display: block; height: 0; overflow: hidden; z-index: auto; pointer-events: auto; transition: height .28s ease; }   /* schneller Wechsel */
     .wp-spacer, .wp-ghost, .wp-ghost-gap, .wp-end-spacer { display: none; }   /* mobil: Akkordeon ohne Fortsetzungen und ohne den Desktop-Auslauf am Ende (sonst lange leere Fläche unter den Projekten) */
 
     /* Projekte: vertikal gestapelt, zentriert (Figma 18-901) */
