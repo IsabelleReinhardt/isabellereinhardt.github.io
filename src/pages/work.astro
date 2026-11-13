@@ -538,7 +538,11 @@ const categories = [
     scrollRAF = requestAnimationFrame(step);
   }
 
+  // Nach Tippen/automatischem Öffnen kurz keine Automatik (sonst kämpft sie mit der Scroll-Animation)
+  let autoLockUntil = 0;
+
   function mobileToggle(i) {
+    autoLockUntil = performance.now() + 900;
     const prev = active;
     if (i === prev) {   // gleiche Kategorie erneut getippt → zuklappen
       cats[prev].classList.remove('is-open');
@@ -588,8 +592,42 @@ const categories = [
     }
   }
 
+  // ---- Automatisch öffnen: Kategorie, die mittig im Bildschirm liegt ----
+  // Läuft erst, wenn das Scrollen kurz pausiert (sonst würde die Seite unter dem Finger springen).
+  // Beim Umschalten bleibt die neue Überschrift an ihrer Stelle stehen: Während die Galerien
+  // auf-/zuklappen, wird die Scrollposition jedes Bild nachgeführt.
+  let autoT = 0;
+  function autoOpen(i) {
+    const prev = active;
+    const head = cats[i].querySelector('.wp-cat-head');
+    labels.forEach((l) => { l.style.transform = ''; });
+    const top0 = head.getBoundingClientRect().top;
+    if (prev >= 0) { cats[prev].classList.remove('is-open'); const g = mgallery(prev); if (g) g.style.height = '0px'; }
+    active = i;
+    cats[i].classList.add('is-open');
+    const gi = mgallery(i); if (gi) gi.style.height = gi.scrollHeight + 'px';
+    wp.classList.add('has-open');
+    const t0 = performance.now();
+    autoLockUntil = t0 + 600;
+    const keep = () => {
+      const d = head.getBoundingClientRect().top - top0;
+      if (Math.abs(d) > 0.5) window.scrollBy(0, d);
+      if (performance.now() - t0 < 520) requestAnimationFrame(keep);
+    };
+    requestAnimationFrame(keep);
+  }
+  function autoCheck() {
+    if (performance.now() < autoLockUntil || footerP > 0.01) return;
+    // Auslöse-Linie = Bildschirmmitte (fest, damit das Umschalten stabil bleibt).
+    const cy = window.innerHeight / 2;
+    const idx = cats.findIndex((c) => { const r = c.getBoundingClientRect(); return r.top <= cy && r.bottom > cy; });
+    if (idx >= 0 && idx !== active) autoOpen(idx);
+  }
+
   let mticking = false;
   function onScrollM() {
+    clearTimeout(autoT);
+    if (performance.now() >= autoLockUntil) autoT = setTimeout(autoCheck, 160);
     if (mticking) return; mticking = true;
     requestAnimationFrame(() => {
       mticking = false;
@@ -608,6 +646,7 @@ const categories = [
   function disableMobile() {
     labels.forEach((l, i) => { if (clickHandlers[i]) l.removeEventListener('click', clickHandlers[i]); l.style.transform = ''; });
     document.removeEventListener('scroll', onScrollM);
+    clearTimeout(autoT);
     if (active >= 0) { cats[active].classList.remove('is-open'); const g = mgallery(active); if (g) g.style.height = '0px'; }
     active = -1; wp.classList.remove('has-open');
     resetFooter();
