@@ -1,0 +1,161 @@
+---
+// Gemeinsames Layout für Rechtstexte (Impressum, Datenschutz).
+// Desktop nach Figma 18-977 (7-Spalten-Raster, aktiver Punkt 50 %, Blöcke abwechselnd links/rechts).
+// Mobil nach Figma 18-1009/18-901 (fixierter 4-Spalten-Header, aktiver Punkt neon-grün, Blöcke zentriert).
+import Layout from './Layout.astro';
+import MobileHeader from '../components/MobileHeader.astro';
+import LangToggle from '../components/LangToggle.astro';
+
+interface Props {
+  heading: string;                   // große (unscharfe) Überschrift, z. B. "Imprint"
+  active: 'imprint' | 'privacy';     // ausgewählter Menüpunkt
+}
+const { heading, active } = Astro.props;
+
+const legalNav = [
+  { label: 'Imprint', href: '/impressum' },
+  { label: 'Privacy', href: '/datenschutz' },
+];
+const activeLabel = active === 'imprint' ? 'Imprint' : 'Privacy';
+---
+
+<Layout>
+  <div class="legalpage min-h-screen text-off">
+
+    <!-- Fixierter Mobile-Header (nur < md) -->
+    <MobileHeader nav={legalNav} active={activeLabel} back />
+
+    <!-- Desktop-Kopfzeile (ab md): Logo links, IMPRINT/PRIVACY rechts -->
+    <header class="legal-row hidden grid-cols-7 md:grid">
+      <a href="/" aria-label="Home" class="flex items-center pl-[var(--m)]">
+        <span class="logo-mark" aria-hidden="true"></span>
+      </a>
+      <!-- Zurück-Pfeil: führt auf die Seite, von der man kam (ohne Vorgeschichte → Startseite) -->
+      <a href="/" data-back class="back-link col-start-2 flex items-center justify-center" aria-label="Back">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H4M10 6l-6 6 6 6" /></svg>
+      </a>
+      <a
+        href="/impressum"
+        class:list={['legal-nav col-start-6', active === 'imprint' && 'is-active']}
+      >
+        Imprint
+      </a>
+      <a
+        href="/datenschutz"
+        class:list={['legal-nav col-start-7', active === 'privacy' && 'is-active']}
+      >
+        Privacy
+      </a>
+    </header>
+
+    <!-- Inhalt (mobil unter den fixen Header geschoben) -->
+    <div class="pt-[25vw] md:pt-0">
+      <!-- Unscharfe Headline (englisch, passend zur Navi) -->
+      <div class="legal-headrow legal-row flex items-center justify-center md:justify-start">
+        <span class="legal-headline">{heading}</span>
+      </div>
+
+      <!-- Blöcke: Desktop abwechselnd links/rechts, mobil zentriert -->
+      <div class="legal">
+        <slot />
+      </div>
+    </div>
+    <LangToggle theme="dark" />
+  </div>
+</Layout>
+
+<script>
+  // Zurück: kam man von einer Seite dieser Website, geht es genau dorthin zurück
+  // (inkl. Scroll-Position); sonst (direkt aufgerufen) zur Startseite.
+  document.querySelectorAll<HTMLAnchorElement>('[data-back]').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      let sameSite = false;
+      try { sameSite = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (err) {}
+      if (sameSite && history.length > 1) { e.preventDefault(); history.back(); }
+    });
+  });
+</script>
+
+<style is:global>
+  .legalpage {
+    --m: 4.8vw;      /* Rand = Logorand (≈ 73px bei 1512) */
+    --rowH: 20vh;    /* Rasterreihe (Desktop) */
+    background-color: var(--color-ink);
+    background-image:
+      linear-gradient(to right, var(--color-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-line) 1px, transparent 1px);
+    background-size: calc(100% / 7) 100%, 100% var(--rowH);
+    background-position: -1px 0, 0 -1px;
+  }
+
+  .legal-row { min-height: var(--rowH); }
+  /* de/en-Knopf: Mitte der Rasterkachel unten links (Zeile = 20vh) */
+  @media (min-width: 768px) {
+    .legalpage .lang-toggle { left: calc(100vw / 14); bottom: calc(var(--rowH) / 2); }
+    /* Text läuft hier unter dem Knopf durch → runder dunkler Hintergrund (80 %) wie mobil */
+    .legalpage .lang-toggle::before {
+      content: ''; position: absolute; left: 50%; top: 50%; width: 96px; height: 96px;
+      transform: translate(-50%, -50%); z-index: -1; border-radius: 50%;
+      background: radial-gradient(closest-side, var(--color-ink) 55%, transparent 100%); opacity: 0.8;
+    }
+  }
+
+  .legal-nav {
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.875rem;
+    color: var(--color-off); transition: opacity .2s;
+  }
+  .legal-nav.is-active { opacity: 0.5; }
+  .legal-nav:hover { color: var(--color-neon); }
+
+  .legal-headline {
+    padding-left: var(--m);
+    font-family: var(--font-display);
+    font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em;
+    color: var(--color-neon);
+    font-size: 6.3vw; line-height: 1; filter: blur(4px); white-space: nowrap;
+  }
+
+  .legal .blk h2 {
+    font-family: var(--font-display);
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.13em;
+    font-weight: 600; color: var(--color-off); margin-bottom: 0.6rem;
+  }
+  /* Zwischenüberschrift innerhalb eines Blocks (z. B. „Right to object") */
+  .back-link { color: var(--color-off); transition: color .2s; }
+  .back-link:hover { color: var(--color-neon); }
+  .back-link svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+  @media (max-width: 767px) { .back-link svg { width: 6vw; height: 6vw; } }
+
+  /* Zwischenüberschrift: gleiche Größe wie der Fließtext, nur etwas kräftiger + heller */
+  .legal .blk h3 {
+    font-family: var(--font-display); font-size: 1em; font-weight: 500;
+    color: var(--color-off); margin: 1.4rem 0 0.4rem;
+  }
+  .legal .blk p, .legal .blk address, .legal .blk li { color: rgba(249, 249, 249,0.82); line-height: 1.7; font-style: normal; }
+  .legal .blk p { margin: 0 0 0.9rem; }
+  .legal .blk a { color: var(--color-neon); text-underline-offset: 2px; overflow-wrap: anywhere; }
+  .legal .blk strong { color: var(--color-off); font-weight: 600; }
+  /* Stichpunkte folgen der Ausrichtung ihres Blocks (links / rechtsbündig / mobil mittig) */
+  .legal .blk ul { list-style: disc inside; padding-left: 0; margin: 0 0 0.9rem; text-align: inherit; }
+  .legal .stand { margin-top: 1rem; font-size: 0.8rem; color: rgba(249, 249, 249,0.5); }
+
+  /* ===== Desktop (ab 768px): 7 Spalten, Blöcke abwechselnd ===== */
+  @media (min-width: 768px) {
+    .legal .blk { min-height: var(--rowH); max-width: 52%; padding-top: 1.5rem; }
+    .legal .blk:nth-of-type(odd)  { padding-left: var(--m); text-align: left; }
+    .legal .blk:nth-of-type(even) { margin-left: auto; padding-right: var(--m); text-align: right; }
+  }
+
+  /* ===== Mobil (bis 767px): 4-Spalten-Raster, Headline zentriert, Blöcke zentriert ===== */
+  @media (max-width: 767px) {
+    .legalpage {
+      --m: 0.9rem;
+      --rowH: 25vw;   /* quadratische Kacheln (4 Spalten) */
+      background-size: calc(100% / 4) 100%, 100% var(--rowH);
+    }
+    .legal-headline { padding-left: 0; text-align: center; font-size: 17vw; filter: blur(1.2vw); }
+    .legal .blk { max-width: 100%; margin: 0 0 2.5rem; padding: 1rem var(--m) 0; text-align: center; }
+  }
+</style>

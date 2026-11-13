@@ -1,0 +1,924 @@
+---
+// ABOUT — Desktop-Layout nach Figma 39-1487 (geöffneter Zustand).
+// Breite About-Spalte, gerahmt von zwei DICKEN vertikalen Rasterlinien; links
+// gestauchte schmale Spalten. Innerhalb der Rahmung sind KEINE Rasterlinien
+// sichtbar — außer der Trennlinie Nav/Inhalt. Nummern rechtsbündig mit gleichem
+// Abstand zur rechten Linie wie der Text zur linken; Überschriften sind blurry.
+// EDUCATION & EXPERIENCE klappen beim Klick auf das Quadrat auf (Figma 22-1291).
+// Mobile ist vorerst nur ein einfacher, lesbarer Fallback (eigenes Design folgt).
+import Layout from '../layouts/Layout.astro';
+import MobileHeader from '../components/MobileHeader.astro';
+import LangToggle from '../components/LangToggle.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { NAV } from '../data/site';
+
+// Timeline-Inhalte der ausgeklappten Sektionen (Figma 22-1291)
+// d1 = erste Zeile (Titel), d2 = zweite Zeile / Fließtext (optional)
+// de1/de2 = deutsche Fassung (EN/DE-Schalter unten rechts); Datum bleibt immer englisch
+const eduTimeline = [
+  { date: '2024 TO PRESENT', d1: 'B.A. Mediadesign', d2: 'RWU Ravensburg-Weingarten University',
+    de1: 'B.A. Mediendesign', de2: 'RWU Hochschule Ravensburg-Weingarten' },
+  { date: '2023 TO 2024',    d1: 'FSJ (voluntary social year)', d2: 'Lebenshilfe Donau-Iller in Jungingen',
+    de1: 'FSJ (Freiwilliges Soziales Jahr)', de2: 'Lebenshilfe Donau-Iller in Jungingen' },
+  { date: 'JAN/FEB 2023',    d1: 'Internship', d2: 'HPZ in Senden',
+    de1: 'Praktikum', de2: 'HPZ in Senden' },
+  { date: 'JUL 2022',        d1: 'Abitur (graduation from high school)', d2: '',
+    de1: 'Abitur', de2: '' },
+  { date: '2014 TO 2022',    d1: 'Gymnasium (high school)', d2: 'Joachim-Hahn-Gymnasium in Blaubeuren',
+    de1: 'Gymnasium', de2: 'Joachim-Hahn-Gymnasium in Blaubeuren' },
+  { date: '2010 TO 2014',    d1: 'Elementary school', d2: 'Grundschule Gerhausen',
+    de1: 'Grundschule', de2: 'Grundschule Gerhausen' },
+];
+const expTimeline = [
+  { date: 'OCT 2026 TO PRESENT', d1: 'Part of a film team (student assistant job).', d2: 'Our professor has asked us to shoot a short film about alumni and their professional lives. The material will also be used for content on the degree programme’s Instagram channel. Together with seven other students, I want to show four different perspectives in the film – and give prospective students an idea of what life after a bachelor’s degree in media design can look like.',
+    de1: 'Teil eines Filmteams (studentische Mitarbeiterin).', de2: 'Unser Professor hat uns beauftragt, einen Kurzfilm über Alumni und ihr Berufsleben zu drehen. Das Material soll außerdem für Inhalte auf dem Instagram-Kanal des Studiengangs genutzt werden. Gemeinsam mit sieben anderen Studierenden möchte ich im Film vier verschiedene Perspektiven zeigen – und Studieninteressierten damit einen Eindruck geben, wie das Leben nach einem Bachelor in Mediendesign aussehen kann.' },
+  { date: 'OCT 2026 TO PRESENT', d1: 'Tutorial in 3D design (student assistant job).', d2: 'As a tutor, I work together with three other students to lead weekly practical sessions. Our tutorials aim to help students better understand and apply the concepts introduced in the 3D design lectures through examples and hands-on exercises. I also provide feedback and assist with grading in close collaboration with the professor.',
+    de1: 'Tutorium in 3D-Design (studentische Mitarbeiterin).', de2: 'Als Tutorin leite ich gemeinsam mit drei anderen Studierenden wöchentliche Übungen. Unsere Tutorien sollen helfen, die Inhalte der 3D-Design-Vorlesung anhand von Beispielen und praktischen Aufgaben besser zu verstehen und anzuwenden. Außerdem gebe ich Feedback und unterstütze bei der Bewertung – in enger Abstimmung mit dem Professor.' },
+  { date: 'MAR 2026 TO PRESENT', d1: 'Hosting the Instagram account <a href="https://www.instagram.com/mediendesign.rwu/" target="_blank" rel="noopener">@mediendesign.rwu</a> for the media design degree programme (student assistant job).', d2: 'This includes weekly posts about completed student projects, student life as a media designer in Weingarten and important announcements such as application deadlines. I do this job together with two other students.',
+    de1: 'Betreuung des Instagram-Accounts <a href="https://www.instagram.com/mediendesign.rwu/" target="_blank" rel="noopener">@mediendesign.rwu</a> des Studiengangs Mediendesign (studentische Mitarbeiterin).', de2: 'Dazu gehören wöchentliche Posts über abgeschlossene Projekte von Studierenden, das Studentenleben in Weingarten und wichtige Ankündigungen wie Bewerbungsfristen. Diesen Job mache ich zusammen mit zwei anderen Studierenden.' },
+  { date: 'MAR TO JUL 2026',     d1: 'Tutorial in motion design (student assistant job).', d2: 'My role involved leading weekly tutorials (practical sessions) alongside three other students, focusing on conveying and reinforcing the material from the motion design lecture through examples. This also included providing feedback and grading, in close consultation with the professor.',
+    de1: 'Tutorium in Motion Design (studentische Mitarbeiterin).', de2: 'Gemeinsam mit drei anderen Studierenden habe ich wöchentliche Tutorien geleitet, in denen wir die Inhalte der Motion-Design-Vorlesung anhand von Beispielen vermittelt und vertieft haben. Dazu gehörten auch Feedback und Bewertung – in enger Absprache mit dem Professor.' },
+];
+
+const sections = [
+  { label: 'INTRO', num: '01',
+    body: `I enjoy exploring design across different media – from visual identities and photography to film, motion, 3D and interactive digital experiences. What I find most exciting is the process of turning an idea into something tangible and trying out different approaches. Graphic design and moving image have fascinated me the most.<br /><br />Creativity was a big part of my life long before university, and it still is alongside my studies. Whether it’s small birthday cards, yarn and knitting needles, a canvas and acrylic paint or linocut tools – design finds its place in my free time, too.`,
+    bodyDe: `Ich entdecke Design gerne über verschiedene Medien hinweg – von Visual Identities und Fotografie über Film, Motion und 3D bis hin zu interaktiven digitalen Erlebnissen. Am spannendsten finde ich den Prozess, aus einer Idee etwas Greifbares zu machen und unterschiedliche Ansätze auszuprobieren. Dabei haben mich Grafikdesign und Bewegtbild am meisten fasziniert.<br /><br />Auch vor dem Studium hat mich die Kreativität lange begleitet, und sie tut es neben dem Studium immer noch. Ob kleine Geburtstagskarten, Wolle und Nadeln, eine Leinwand und Acrylfarben oder Linoldruck-Werkzeug – die Gestaltung findet auch in meiner Freizeit ihren Platz.` },
+  { label: 'EXPERIENCE', num: '02', tap: 'exp' },
+  { label: 'EDUCATION',  num: '03', tap: 'edu' },
+  { label: 'CURRENTLY', num: '04',
+    body: `I’m currently looking for the next opportunity to apply what I’ve learned at university beyond its walls. I’m curious to experience how design works in a professional environment – how ideas are developed, how projects evolve through collaboration and how creative decisions are made when working towards real goals within real constraints.<br /><br />Most of all, I’m looking forward to challenging myself with new projects, continuing to develop my skills and discovering what kind of designer I can become when I take the step from university into the world of professional design.`,
+    bodyDe: `Gerade suche ich nach der nächsten Gelegenheit, das, was ich im Studium gelernt habe, über die Räume der Hochschule hinaus anzuwenden. Ich bin neugierig darauf, wie Design im professionellen Umfeld funktioniert – wie Ideen entstehen, wie sich Projekte in der Zusammenarbeit entwickeln und wie kreative Entscheidungen getroffen werden, wenn man mit echten Zielen und echten Rahmenbedingungen arbeitet.<br /><br />Vor allem freue ich mich darauf, mich mit neuen Projekten herauszufordern, meine Fähigkeiten weiterzuentwickeln und herauszufinden, welche Designerin ich werden kann, wenn ich den Schritt aus der Hochschule in die professionelle Designwelt mache.` },
+];
+---
+
+<Layout>
+  <div class="aboutpage bg-ink text-off">
+
+    <!-- EN/DE-Schalter für die Fließtexte (fest unten rechts, Footer schiebt sich darüber) -->
+    <LangToggle theme="dark" />
+
+    <!-- Mobile-Header (fixiert, < md) — vorerst nur Grundfunktion -->
+    <MobileHeader nav={NAV} active="About" />
+
+    <!-- ===== Desktop-Header (Nav mittig in der jeweiligen Rasterkachel) ===== -->
+    <SiteHeader p="ab" active="About" />
+
+    <!-- Inhaltsebene: wird beim Footer-Reveal „festgehalten" und geblurrt -->
+    <div class="ab-main">
+
+    <!-- ===== Rasterlinien-Ebene (nur Desktop) ===== -->
+    <div class="ab-grid" aria-hidden="true">
+      <span class="ab-v" style="left:calc(var(--ab-490) * 0.24898)"></span>
+      <span class="ab-v" style="left:calc(var(--ab-490) * 0.49796)"></span>
+      <span class="ab-v" style="left:calc(var(--ab-490) * 0.75102)"></span>
+      <span class="ab-v" style="left:var(--ab-490)"></span>
+      <span class="ab-v thick ab-thickL" style="left:var(--ab-L)"></span>
+      <span class="ab-v thick ab-thickR" style="left:var(--ab-R)"></span>
+      <div class="ab-rail ab-rail-l"></div>
+      <div class="ab-rail ab-rail-r"></div>
+      <div class="ab-navsep"></div>
+    </div>
+
+
+    <!-- ===== About-Spalte: öffnet sich beim Laden aus der Mitte (Clip) ===== -->
+    <div class="ab-reveal">
+
+    <!-- ===== Hero (linksbündig an der Inhaltskante, mittig in der 1. Zeile) ===== -->
+    <h1 class="ab-hero">HI I&rsquo;M ISI</h1>
+    </div><!-- /.ab-reveal (Hero) -->
+
+    <!-- ===== Foto-Band — eigene Animation: Bild fährt im Swoosh von rechts nach links aus ===== -->
+    <div class="ab-photo">
+      <div class="ab-photo-img">
+        <img src="/about/AboutBild1-web.jpg" alt="Black-and-white portrait of Isabelle Reinhardt crouching, chin resting on her hand, in a checked shirt" />
+      </div>
+      <!-- Desktop: Hovern über das Foto lässt drei kleine Fotos aufploppen (Figma „ABOUT Page 4") -->
+      <div class="ab-pops" aria-hidden="true">
+        <img class="ab-pop p3" src="/about/AboutBild3-web.jpg" alt="" />
+        <img class="ab-pop p4" src="/about/AboutBild4-web.jpg" alt="" />
+        <img class="ab-pop p2" src="/about/AboutBild2-web.jpg" alt="" />
+      </div>
+      <p class="ab-intro"><span>I AM A 22 YEAR OLD MEDIA DESIGN STUDENT IN WEINGARTEN, GERMANY.</span><span>I ENJOY BEING A CREATIVE AND I&rsquo;M ALWAYS CURIOUS ABOUT ALL THE DIFFERENT WAYS AN IDEA CAN TAKE SHAPE.</span></p>
+    </div>
+
+    <!-- ===== Inhalt: nummerierte Sektionen (gleichmäßige Abstände) ===== -->
+    <div class="ab-reveal">
+    <div class="ab-content">
+      {sections.map((s) => (
+        <section class:list={["ab-sec", s.tap && "ab-expandable"]}>
+          <div class="ab-head"><span>{s.label}</span><span>{s.num}</span></div>
+          {s.body && <p class="ab-body"><span data-l="en" set:html={s.body} /><span data-l="de" set:html={s.bodyDe} /></p>}
+
+          {s.tap === 'edu' && (
+            <Fragment>
+              <div class="ab-tap edu"><span class="sq"></span><span class="lbl">Tap to see the details</span></div>
+              <div class="ab-detail edu-detail">
+                <div class="ab-detail-photo"><img src="/about/AboutEducationBild-web.jpg" alt="Black-and-white photo of Isabelle Reinhardt looking back over her shoulder in front of a building" /></div>
+                <ul class="ab-tl tl-left">
+                  {eduTimeline.map((t, k) => (
+                    <li class="ab-tl-item" style={`--i:${k}`}>
+                      <div class="tl-row"><span class="tl-mark"></span><span class="tl-date">{t.date}</span></div>
+                      <p class="tl-desc">
+                        <span data-l="en">{t.d1}{t.d2 && (<Fragment><br />{t.d2}</Fragment>)}</span>
+                        <span data-l="de">{t.de1}{t.de2 && (<Fragment><br />{t.de2}</Fragment>)}</span>
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Fragment>
+          )}
+
+          {s.tap === 'exp' && (
+            <Fragment>
+              <div class="ab-tap exp"><span class="lbl">Tap to see the details</span><span class="sq"></span></div>
+              <div class="ab-detail exp-detail">
+                <ul class="ab-tl tl-right">
+                  {expTimeline.map((t, k) => (
+                    <li class="ab-tl-item" style={`--i:${k}`}>
+                      <div class="tl-row"><span class="tl-date">{t.date}</span><span class="tl-mark"></span></div>
+                      <!-- Kurzbeschreibung direkt unter dem Datum, dann Abstand, dann die Erläuterung -->
+                      <p class="tl-desc tl-lead"><span data-l="en" set:html={t.d1} /><span data-l="de" set:html={t.de1} /></p>   <!-- set:html: Kurzbeschreibung darf einen Link enthalten (z. B. Instagram) -->
+                      {t.d2 && <p class="tl-desc tl-more"><span data-l="en">{t.d2}</span><span data-l="de">{t.de2}</span></p>}
+                    </li>
+                  ))}
+                </ul>
+                <div class="ab-detail-photo"><img src="/about/AboutExperienceBild-web.jpg" alt="Black-and-white photo of Isabelle Reinhardt laughing and holding up a white T-shirt" /></div>
+              </div>
+            </Fragment>
+          )}
+        </section>
+      ))}
+    </div>
+    </div><!-- /.ab-reveal -->
+
+    </div><!-- /.ab-main -->
+
+    <!-- Footer-Scrollzone: echte Seitenlänge am Ende, in die man nativ hineinscrollt. Liegt NACH
+         .ab-main: .ab-main ist „sticky" und bleibt dadurch beim Footer-Reveal ohne JS stehen. -->
+    <div class="ab-footer-space" aria-hidden="true"></div>
+
+    <!-- Footer: schiebt sich beim Weiterscrollen am Seitenende von unten hoch;
+         der restliche Inhalt bekommt dabei einen Layer-Blur (wie Work-Seite) -->
+    <SiteFooter p="ab" />
+  </div>
+</Layout>
+
+<script>
+  // Verbindungslinie exakt vom obersten bis zum untersten Kästchen spannen (nicht weiter).
+  // Offsets über die offsetParent-Kette aufsummieren: die aufploppenden .ab-tl-item tragen
+  // ein transform und werden dadurch selbst zum offsetParent ihrer Marker — ein einfaches
+  // marks[i].offsetTop läge dann nur innerhalb des Items (≈0) und die Linie bliebe 0 hoch.
+  function offTopWithin(el, root) {
+    let y = 0;
+    while (el && el !== root) { y += el.offsetTop; el = el.offsetParent; }
+    return y;
+  }
+  function layoutLine(tl) {
+    const marks = tl.querySelectorAll('.tl-mark');
+    if (marks.length < 2) return;
+    const first = marks[0], last = marks[marks.length - 1];
+    const top = offTopWithin(first, tl) + first.offsetHeight / 2;
+    const bottom = offTopWithin(last, tl) + last.offsetHeight / 2;
+    tl.style.setProperty('--tl-top', top + 'px');
+    tl.style.setProperty('--tl-h', (bottom - top) + 'px');
+  }
+  function layoutAllLines() {
+    document.querySelectorAll('.aboutpage .ab-expandable.is-open .ab-tl').forEach(layoutLine);
+  }
+
+  // Fotos auf das sichtbare 171px-Raster einrasten (nur Desktop): Education an der
+  // Oberkante, Experience an der Unterkante. Dadurch liegen die Bildkanten auf den
+  // waagerechten Rasterlinien. Auf Mobile werden die Inline-Offsets wieder entfernt.
+  const SEC_GAP = 40;   // Standard-Abstand Inhalt → nächste Überschrift (= .ab-sec margin-bottom)
+  function snapPhotos() {
+    const page = document.querySelector('.aboutpage');
+    if (!page) return;
+    const photos = page.querySelectorAll('.ab-detail-photo');
+    photos.forEach((p) => { p.style.top = ''; p.style.bottom = ''; p.style.height = ''; });
+    page.querySelectorAll('.ab-tl').forEach((tl) => tl.style.removeProperty('--tl-extra'));
+    // Dynamischen Abstand unter Experience zurücksetzen (gilt nur bei offenem Zustand/Desktop)
+    page.querySelectorAll('.exp-detail').forEach((d) => { const s = d.closest('.ab-sec'); if (s) s.style.marginBottom = ''; });
+    if (window.innerWidth < 768) {
+      // Mobile: Detailfotos aufs 25vw-Hintergrundraster einrasten (Ober-/Unterkante auf Rasterlinien).
+      // Die sichtbaren Rasterlinien liegen bei y = n*mrow − GOFF (background-position: 0 -1px),
+      // NICHT bei n*mrow — darum GOFF berücksichtigen, sonst sitzt das Bild ~1px unter der Linie.
+      const mrow = window.innerWidth * 0.25;
+      const GOFF = 1;
+      page.querySelectorAll('.ab-expandable.is-open .ab-detail-photo').forEach((photo) => {
+        const detail = photo.closest('.ab-detail');
+        if (!detail) return;
+        const r = detail.getBoundingClientRect();
+        const topDoc = r.top + window.scrollY, botDoc = r.bottom + window.scrollY;
+        const topLine = Math.ceil((topDoc + GOFF) / mrow) * mrow - GOFF;   // 1. Rasterlinie im Detail
+        const botLine = Math.floor((botDoc + GOFF) / mrow) * mrow - GOFF;  // letzte Rasterlinie im Detail
+        if (botLine > topLine) {
+          photo.style.top = (topLine - topDoc) + 'px';
+          photo.style.bottom = (botDoc - botLine) + 'px';
+        }
+      });
+      return;
+    }
+    const row = parseFloat(getComputedStyle(page).getPropertyValue('--ab-row')) || 171;
+    // Rasterursprung = .ab-main (Raster liegt darin; verschiebt sich mit dem Footer-Reveal mit).
+    const gridTop = (document.querySelector('.ab-main') || page).getBoundingClientRect().top;
+    const pageTop = gridTop;
+    // Fotos (Education + Experience) enden auf einer Linie mit dem UNTERSTEN Timeline-Kästchen,
+    // und diese Linie liegt auf einer waagerechten Rasterlinie. Dazu werden die Abstände zwischen
+    // den Kästchen gleichmäßig etwas vergrößert (--tl-extra), bis die Unterkante des letzten
+    // Kästchens genau auf der nächsten Rasterlinie sitzt. Gemessen über offsetTop (ignoriert die
+    // Aufpopp-Animation mit translateY), nicht über getBoundingClientRect der Kästchen.
+    page.querySelectorAll('.ab-expandable.is-open .ab-detail').forEach((detail) => {
+      const photo = detail.querySelector('.ab-detail-photo');
+      const tl = detail.querySelector('.ab-tl');
+      if (!photo || !tl) return;
+      const marks = tl.querySelectorAll('.tl-mark');
+      const last = marks[marks.length - 1];
+      if (!last) return;
+      const lastBottom = () => detail.getBoundingClientRect().top + offTopWithin(last, detail) + last.offsetHeight - pageTop;
+      const y0 = lastBottom();
+      const target = Math.ceil(y0 / row - 0.002) * row;          // nächste Rasterlinie darunter
+      if (marks.length > 1 && target - y0 > 0.5) tl.style.setProperty('--tl-extra', ((target - y0) / (marks.length - 1)) + 'px');
+      const y1 = lastBottom();
+      const dTop = detail.getBoundingClientRect().top - pageTop;
+      // Höhe in ganzen Rasterzeilen: so viele, wie zwischen oberstes und unterstes Kästchen passen
+      // → das Foto reicht (wie bei Education) fast bis zum obersten Kästchen.
+      const firstTop = dTop + offTopWithin(marks[0], detail);
+      photo.style.height = Math.max(3, Math.floor((y1 - firstTop) / row)) * row + 'px';
+      photo.style.bottom = 'auto';
+      photo.style.top = (y1 - dTop - photo.offsetHeight) + 'px';
+    });
+    layoutAllLines();   // Verbindungslinie an die neuen Abstände anpassen
+  }
+  // CURRENTLY (letzte Sektion) soll ganz unten mittig im Screen stehen können, bevor der Footer
+  // kommt: Luft unter dem Inhalt = halbe Fensterhöhe minus halbe Sektionshöhe (nur Desktop).
+  function padForCurrently() {
+    const content = document.querySelector('.aboutpage .ab-content');
+    const last = document.querySelector('.aboutpage .ab-content .ab-sec:last-child');
+    if (!content || !last) return;
+    if (window.innerWidth < 768) { content.style.paddingBottom = ''; return; }
+    content.style.paddingBottom = Math.max(85, Math.round(window.innerHeight / 2 - last.offsetHeight / 2)) + 'px';
+  }
+  padForCurrently();
+  function relayout() { padForCurrently(); layoutAllLines(); snapPhotos(); sharpenHeads(); }
+
+  // EDUCATION / EXPERIENCE: auf-/zuklappen. Desktop: die Detailhöhe wird animiert, sodass
+  // der darunterliegende Abschnitt sichtbar nach unten gleitet und so das Foto freistellt.
+  const DETAIL_OPEN = 0.6, DETAIL_CLOSE = 0.5;   // Sekunden
+  function clearDetailInline(d) { d.style.transition = ''; d.style.height = ''; d.style.overflow = ''; d.style.clipPath = ''; }
+  const EASE_OPEN = 'cubic-bezier(0.22, 1, 0.36, 1)';   // sanftes Ausklingen beim Öffnen
+  const EASE_CLOSE = 'cubic-bezier(0.5, 0, 1, 1)';       // beschleunigt zum Ende → kein hängendes letztes Kästchen
+  function slideDetail(detail, from, to, dur, ease, after) {
+    if (detail._slideDone) detail.removeEventListener('transitionend', detail._slideDone);
+    // Nur vertikal beschneiden (oben großzügig für den Experience-Bleed nach oben),
+    // horizontal offen lassen, damit das über die Spalte blutende Foto nicht abgeschnitten wird.
+    detail.style.overflow = 'visible';
+    detail.style.clipPath = 'inset(-40vh -40vw 0 -40vw)';
+    detail.style.height = from + 'px';
+    void detail.offsetHeight;                      // Reflow erzwingen, damit die Transition startet
+    detail.style.transition = 'height ' + dur + 's ' + ease;
+    detail.style.height = to + 'px';
+    const done = (e) => {
+      if (e.propertyName !== 'height') return;
+      detail.removeEventListener('transitionend', done); detail._slideDone = null;
+      clearDetailInline(detail);
+      if (after) after();
+    };
+    detail._slideDone = done;
+    detail.addEventListener('transitionend', done);
+  }
+  document.querySelectorAll('.aboutpage .ab-expandable').forEach((sec) => {
+    const lbl = sec.querySelector('.ab-tap .lbl');
+    const detail = sec.querySelector('.ab-detail');
+    const toggle = (e) => {
+      e.preventDefault();
+      const willOpen = !sec.classList.contains('is-open');
+      if (lbl) lbl.textContent = willOpen ? 'close' : 'Tap to see the details';
+      const desktop = window.innerWidth >= 768;
+      if (willOpen) {
+        sec.classList.add('is-open');
+        sec.querySelectorAll('.ab-tl').forEach(layoutLine);
+        snapPhotos();
+        if (desktop && detail) slideDetail(detail, 0, detail.offsetHeight, DETAIL_OPEN, EASE_OPEN, snapPhotos);
+      } else if (desktop && detail) {
+        // Beim Zuklappen das Foto schon früh ausblenden (sonst bleibt es bis zum Ende sichtbar).
+        // animation:none nötig, sonst hält die ab-detailfade-Animation (fill both) opacity:1.
+        const photos = detail.querySelectorAll('.ab-detail-photo');
+        photos.forEach((ph) => { ph.style.animation = 'none'; ph.style.transition = 'opacity 0.22s ease'; void ph.offsetWidth; ph.style.opacity = '0'; });
+        slideDetail(detail, detail.offsetHeight, 0, DETAIL_CLOSE, EASE_CLOSE, () => {
+          sec.classList.remove('is-open');
+          photos.forEach((ph) => { ph.style.animation = ''; ph.style.transition = ''; ph.style.opacity = ''; });
+          snapPhotos();
+        });
+      } else {
+        sec.classList.remove('is-open'); snapPhotos();
+      }
+    };
+    sec.querySelector('.ab-head')?.addEventListener('click', toggle);
+    sec.querySelector('.ab-tap')?.addEventListener('click', toggle);
+    // Zugeklappt ist der ganze Kasten klickbar (auch der Abstand zwischen Überschrift und Tap-Zeile)
+    sec.addEventListener('click', (e) => {
+      if (sec.classList.contains('is-open')) return;
+      if (e.target instanceof Element && e.target.closest('.ab-head, .ab-tap')) return;   // die haben eigene Klicks
+      toggle(e);
+    });
+  });
+
+  window.addEventListener('resize', relayout);
+  // Nach dem Laden der Schrift neu vermessen (Texthöhen ändern sich sonst nach dem Snap).
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(relayout);
+
+  // ===== Footer: schiebt sich beim nativen Scrollen am Seitenende hoch (wie Work) =====
+  const aboutpage = document.querySelector('.aboutpage');
+  const footer = document.querySelector('.ab-footer');
+  const mainEl = document.querySelector('.ab-main');
+  let footerP = 0;
+  let footerStartCached = 0;
+  // Länge der Fußzone (Desktop 100vh; mobil länger → Footer steigt langsamer auf)
+  const footerSpaceEl = document.querySelector('.ab-footer-space');
+  const FZ = () => (footerSpaceEl ? footerSpaceEl.offsetHeight : 0) || window.innerHeight;
+  const clampF = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
+  // .ab-main bleibt per position:sticky stehen (wie auf Work/Projektseiten am Desktop): top so
+  // setzen, dass seine Unterkante an der Fensterunterkante „klebt". Das macht der Browser beim
+  // Scrollen selbst → kein Nachruckeln mehr (vorher: Verschiebung per JS, immer 1 Frame zu spät).
+  function setStickyTop() {
+    if (!mainEl) return;
+    const v = Math.min(0, window.innerHeight - mainEl.offsetHeight) + 'px';
+    if (mainEl.style.top !== v) mainEl.style.top = v;
+  }
+  if (mainEl && 'ResizeObserver' in window) new ResizeObserver(setStickyTop).observe(mainEl);   // z. B. Details aufklappen
+  window.addEventListener('resize', setStickyTop, { passive: true });
+  setStickyTop();
+  function refreshFooterStart() {
+    footerStartCached = Math.max(0, document.documentElement.scrollHeight - window.innerHeight - FZ());
+  }
+  function applyFooter() {
+    if (!footer) return;
+    footer.style.transform = 'translateY(' + ((1 - footerP) * 100).toFixed(2) + '%)';
+    footer.classList.toggle('is-active', footerP > 0.5);
+  }
+  function footerProgress() {
+    refreshFooterStart();
+    return clampF((window.scrollY - footerStartCached) / FZ(), 0, 1);
+  }
+  // Scroll-Events feuern schneller als Frames → per requestAnimationFrame drosseln,
+  // sonst läuft applyFooter (teurer Blur-Filter + Transform) mehrfach pro Frame → Ruckeln.
+  const headerEl = document.querySelector('.ab-header');
+  function updateHeader() { if (headerEl) headerEl.classList.toggle('is-scrolled', window.scrollY > 10); }
+
+  // Mobile: die Überschrift wird scharf, wenn ihr Themenfeld mittig im Screen liegt,
+  // und blurrt wieder aus, je weiter es sich von der Mitte entfernt (scrollgesteuert).
+  // Desktop bleibt CSS-gesteuert (konstanter Blur + Hover) → dort Inline-Filter entfernen.
+  const abHeads = Array.from(document.querySelectorAll('.aboutpage .ab-content .ab-sec'));
+  function sharpenHeads() {
+    if (window.innerWidth >= 768) {
+      abHeads.forEach((sec) => { const h = sec.querySelector('.ab-head'); if (h && h._blur != null) { h.style.filter = ''; h._blur = null; } });
+      return;
+    }
+    const center = window.innerHeight / 2;
+    const MAXBLUR = window.innerWidth * 0.012;     // = 1.2vw (wie der CSS-Grundblur mobil)
+    const RANGE = window.innerHeight * 0.40;       // ab dieser Distanz zur Mitte voll unscharf
+    abHeads.forEach((sec) => {
+      const h = sec.querySelector('.ab-head'); if (!h) return;
+      let blur;
+      if (sec.classList.contains('is-open')) blur = 0;   // aufgeklappt bleibt scharf
+      else {
+        const r = h.getBoundingClientRect();
+        const d = Math.min(1, Math.abs(r.top + r.height / 2 - center) / RANGE);
+        blur = +(MAXBLUR * d).toFixed(2);
+      }
+      const v = blur + 'px';
+      if (h._blur !== v) { h._blur = v; h.style.filter = 'blur(' + v + ')'; }   // nur bei Änderung schreiben
+    });
+  }
+  let footerTicking = false;
+  function onScrollFooter() {
+    if (footerTicking) return;
+    footerTicking = true;
+    requestAnimationFrame(() => {
+      footerTicking = false;
+      footerP = footerProgress();
+      applyFooter();
+      updateHeader();   // Sticky-Header: Scrim beim Scrollen ein-/ausblenden
+      sharpenHeads();   // Mobile: Überschrift in der Bildschirmmitte scharf stellen
+    });
+  }
+  document.addEventListener('scroll', onScrollFooter, { passive: true });
+  footerP = footerProgress(); applyFooter(); updateHeader(); sharpenHeads();   // Ausgangszustand sofort setzen
+
+  // Desktop: in der Fußzone abwärts gedämpft scrollen → Footer fährt so langsam hoch wie auf
+  // Work und den Projekt-Detailseiten (gleicher Wert).
+  const FOOTER_DAMP = 0.6;   // About: weniger gebremst als Work/Projekte, sonst dauert es hier zu lange
+  window.addEventListener('wheel', (e) => {
+    if (window.innerWidth < 768 || e.defaultPrevented) return;
+    const d = e.deltaY * (e.deltaMode === 1 ? 16 : 1);
+    refreshFooterStart();
+    if (d > 0 && window.scrollY >= footerStartCached - 1) { window.scrollBy(0, d * FOOTER_DAMP); e.preventDefault(); }
+  }, { passive: false });
+
+  // Verlassen der Seite (nur Desktop): Eröffnungs-Animation rückwärts abspielen, dann navigieren.
+  (function () {
+    if (window.innerWidth < 768) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const page = document.querySelector('.aboutpage');
+    if (!page) return;
+    const here = location.pathname.replace(/\/$/, '');
+    document.querySelectorAll('.ab-header a[href]').forEach((a) => {
+      const href = a.getAttribute('href');
+      if (!href || href.charAt(0) === '#' || /^(https?:|mailto:)/.test(href)) return;
+      if (href.replace(/\/$/, '') === here) return;   // aktuelle Seite (About) nicht animieren
+      a.addEventListener('click', (e) => {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        page.classList.add('ab-leaving');
+        setTimeout(() => { location.href = href; }, 520);
+      });
+    });
+  })();
+</script>
+
+<style is:global>
+  .aboutpage {
+    /* WORK & CONTACT bleiben fest; die About-Spalte darf mitschrumpfen,
+       damit sich Logo und WORK-Spalte beim Verkleinern nie überlagern. */
+    --ab-Ccol: 128px;  /* CONTACT-Spalte fest */
+    --ab-Wcol: 123px;  /* WORK-Spalte fest */
+    --ab-R: calc(100% - var(--ab-Ccol));           /* rechte Rahmenlinie */
+    --ab-L: 40.542%;                               /* linke Rahmenlinie — About flext */
+    --ab-490: calc(var(--ab-L) - var(--ab-Wcol));  /* linke WORK-Linie (= vier linke Spalten gesamt) */
+    --ab-inset: clamp(18px, calc((var(--ab-R) - var(--ab-L)) * 0.07), 54px);  /* Einzug staucht mit der About-Spalte */
+    /* Gleicher Einzug, aber in vw statt % ausgedrückt — damit er auch INNERHALB des
+       eingerückten Inhaltskastens korrekt auflöst (% würde sich dort auf die Kastenbreite
+       beziehen). Nötig, um die Fotos an die Gridlinien zu koppeln. */
+    --ins-abs: clamp(18px, calc((59.458vw - 128px) * 0.07), 54px);
+    --ab-cl: calc(var(--ab-L) + var(--ab-inset));  /* Inhalt links */
+    --ab-cr: calc(var(--ab-R) - var(--ab-inset));  /* Inhalt rechts */
+    --ab-abw: calc(var(--ab-R) - var(--ab-L));     /* Breite der About-Spalte */
+    --ab-cx: calc((var(--ab-L) + var(--ab-R)) / 2);/* Mitte der About-Spalte (Start der Aufschiebe-Animation) */
+    --ab-row: 171px;   /* Rasterzeilenhöhe */
+    position: relative; min-height: 100vh;
+    background: var(--color-ink);
+    overflow-x: clip;
+  }
+
+  /* ---------- Rasterlinien ---------- */
+  .ab-grid { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  .ab-v { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--color-line); }
+  .ab-v.thick { width: 3px; }
+  .ab-rail {
+    position: absolute; top: 0; bottom: 0;
+    background-image: repeating-linear-gradient(to bottom,
+      transparent 0, transparent calc(var(--ab-row) - 1px),
+      var(--color-line) calc(var(--ab-row) - 1px), var(--color-line) var(--ab-row));
+  }
+  .ab-rail-l { left: 0; width: var(--ab-L); }
+  .ab-rail-r { left: var(--ab-R); right: 0; }
+  /* Deckungsgleich mit der 1. Rail-Linie (row − 1px), sonst liegen beide 1px versetzt
+     übereinander und die Linie unter dem Header wirkt doppelt so dick. */
+  .ab-navsep { position: absolute; left: 0; right: 0; top: calc(var(--ab-row) - 1px); height: 1px; background: var(--color-line); }
+
+  /* ---------- Seiten-Animation: die About-Spalte schiebt sich beim Laden aus der Mitte auf ---------- */
+  .ab-reveal { animation: ab-open 0.9s cubic-bezier(0.76, 0, 0.24, 1) both; }
+  /* Nur die LINKE Rahmenlinie swoosht beim Öffnen von rechts nach links herein;
+     die rechte Linie steht sofort an ihrer Position. */
+  .ab-thickL { animation: ab-slideL 0.9s cubic-bezier(0.76, 0, 0.24, 1) both; }
+  /* Start = eine Raster-Grundspalte breit (7.143vw = halbe Standard-Spalte 100vw/7),
+     mittig in der About-Spalte — wie der Grundabstand der Gridlinien auf der Work-Seite. */
+  @keyframes ab-open {
+    from { clip-path: inset(0 calc(100% - var(--ab-cx) - 7.143vw) 0 calc(var(--ab-cx) - 7.143vw)); }
+    to   { clip-path: inset(0 -2px 0 -2px); }   /* -2px: keine Kanten-Beschneidung sichtbarer Inhalte */
+  }
+  /* Startposition = 5/7 der Bildschirmbreite (71.4286vw) — dort, wo die ABOUT-Spalte im
+     7-Spalten-Work-Grid beginnt. Endposition = --ab-L (40.542%). Offset in vw, weil % im
+     translateX sich auf die 3px-Eigenbreite der Linie bezöge → kaum Bewegung.
+     71.4286vw − 40.542vw ≈ 30.887vw. */
+  @keyframes ab-slideL { from { transform: translateX(30.887vw); }  to { transform: translateX(0); } }
+  /* Erstes Foto: Swoosh von rechts nach links (Clip gibt das Bild von rechts her frei + leichter Nachlauf) */
+  .ab-photo-img { animation: ab-swoosh 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
+  .ab-intro { animation: ab-introfade 0.6s ease 0.5s both; }
+  @keyframes ab-swoosh {
+    from { clip-path: inset(0 0 0 100%); transform: translateX(5vw); }
+    to   { clip-path: inset(0 0 0 -2px); transform: translateX(0); }
+  }
+  @keyframes ab-introfade { from { opacity: 0; } to { opacity: 1; } }
+  /* Verlassen der Seite (Desktop): eigene Exit-Keyframes (NICHT dieselbe Animation rückwärts —
+     die ist schon „finished" und würde nur in den Endzustand springen). Etwas schneller. */
+  .aboutpage.ab-leaving .ab-reveal    { animation: ab-close      0.55s cubic-bezier(0.76, 0, 0.24, 1) both; }
+  .aboutpage.ab-leaving .ab-thickL    { animation: ab-slideL-out 0.55s cubic-bezier(0.76, 0, 0.24, 1) both; }
+  .aboutpage.ab-leaving .ab-photo-img { animation: ab-swoosh-out  0.5s  cubic-bezier(0.7, 0, 0.84, 0) both; }
+  .aboutpage.ab-leaving .ab-intro     { animation: ab-introfade-out 0.35s ease both; }
+  .aboutpage.ab-leaving .ab-about     { animation: ab-navslide-out 0.55s cubic-bezier(0.76, 0, 0.24, 1) both; }
+  .aboutpage.ab-leaving .ab-work      { animation: ab-navslideW-out 0.55s cubic-bezier(0.76, 0, 0.24, 1) both; }
+  @keyframes ab-close {
+    from { clip-path: inset(0 -2px 0 -2px); }
+    to   { clip-path: inset(0 calc(100% - var(--ab-cx) - 7.143vw) 0 calc(var(--ab-cx) - 7.143vw)); }
+  }
+  @keyframes ab-slideL-out { from { transform: translateX(0); } to { transform: translateX(30.887vw); } }
+  @keyframes ab-swoosh-out {
+    from { clip-path: inset(0 0 0 -2px);  transform: translateX(0); }
+    to   { clip-path: inset(0 0 0 100%);  transform: translateX(5vw); }
+  }
+  @keyframes ab-navslide-out {
+    from { transform: translate(-50%, -50%) translateX(0); }
+    to   { transform: translate(-50%, -50%) translateX(calc(8.3vw + 64px)); }
+  }
+  @keyframes ab-navslideW-out {
+    from { transform: translate(-50%, -50%) translateX(0); }
+    to   { transform: translate(-50%, -50%) translateX(calc(23.7437vw + 61.5px)); }
+  }
+  @keyframes ab-introfade-out { from { opacity: 1; } to { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .ab-reveal, .ab-thickL, .ab-photo-img, .ab-intro, .ab-about, .ab-work,
+    .ab-expandable.is-open .ab-tl-item, .ab-expandable.is-open .ab-detail-photo { animation: none; }
+  }
+
+  /* ---------- Desktop-Header (sticky wie die Work-Seite) ---------- */
+  .ab-header { position: fixed; inset-inline: 0; top: 0; z-index: 50; height: var(--ab-row); }   /* über dem Footer (40) → Nav bleibt klickbar */
+  /* Scrim: blendet beim Scrollen ein, damit die Navi über dem Inhalt lesbar bleibt. */
+  .ab-header::before {
+    content: ''; position: absolute; left: 0; top: 0; width: 100%; height: calc(var(--ab-row) * 2.3);
+    z-index: -1; pointer-events: none; opacity: 0; transition: opacity .3s ease;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.93) 18%, rgba(0,0,0,0.82) 34%, rgba(0,0,0,0.63) 50%, rgba(0,0,0,0.4) 65%, rgba(0,0,0,0.19) 80%, rgba(0,0,0,0.06) 91%, rgba(0,0,0,0) 100%);
+  }
+  .ab-header.is-scrolled::before { opacity: 1; }
+  .ab-home { position: absolute; left: calc(var(--ab-490) * 0.12449); top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; }
+  .ab-nav {
+    position: absolute; top: 50%; transform: translate(-50%, -50%);
+    font-family: var(--font-display); font-weight: 500; font-size: 0.875rem;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--color-off);
+    text-decoration: none; white-space: nowrap; transition: color .2s, opacity .2s;
+  }
+  .ab-nav:hover { color: var(--color-neon); }
+  /* Ganze Rasterkachel ist klickbar und löst den Hover aus: Links bekommen die volle Kachelgröße
+     (Mitte bleibt gleich, weil sie weiter per translate(-50%,-50%) zentriert werden). */
+  .ab-home, .ab-nav { height: var(--ab-row); display: flex; align-items: center; justify-content: center; }
+  .ab-home    { width: calc(var(--ab-490) / 4); }                 /* Spalte 1 (Logo) */
+  .ab-work    { width: calc(var(--ab-L) - var(--ab-490)); }       /* WORK-Kachel */
+  .ab-about   { width: calc(var(--ab-R) - var(--ab-L)); }         /* About-Spalte */
+  .ab-contact { width: calc(100% - var(--ab-R)); }                /* CONTACT-Kachel */
+  .ab-nav.is-active { opacity: 0.5; }
+  .ab-work    { left: calc((var(--ab-490) + var(--ab-L)) / 2); }   /* Mitte WORK-Kachel */
+  .ab-about   { left: calc((var(--ab-L) + var(--ab-R)) / 2); }     /* Mitte About-Spalte */
+  .ab-contact { left: calc((var(--ab-R) + 100%) / 2); }           /* Mitte CONTACT-Kachel */
+  /* ABOUT ist immer sichtbar und rutscht beim Öffnen von seiner Grundposition (wie auf der
+     Work-Seite: Mitte Spalte 6 von 7 = 78.5714vw) nach links auf seine About-Position (--ab-cx).
+     Offset = 78.5714vw − (70.271vw − 64px) = 8.3vw + 64px. Kein Opacity-Fade. */
+  .ab-about { animation: ab-navslide 0.9s cubic-bezier(0.76, 0, 0.24, 1) 0.05s both; }
+  @keyframes ab-navslide {
+    from { transform: translate(-50%, -50%) translateX(calc(8.3vw + 64px)); }
+    to   { transform: translate(-50%, -50%) translateX(0); }
+  }
+  /* WORK rutscht beim Öffnen von seiner Work-Seiten-Position (Mitte Spalte 5 von 7 =
+     64.2857vw) nach links auf seine About-Position (--ab-work = --ab-L − 61.5px).
+     Offset = 64.2857vw − (40.542vw − 61.5px) = 23.7437vw + 61.5px. Wie ABOUT: kein Fade. */
+  .ab-work { animation: ab-navslideW 0.9s cubic-bezier(0.76, 0, 0.24, 1) 0.05s both; }
+  @keyframes ab-navslideW {
+    from { transform: translate(-50%, -50%) translateX(calc(23.7437vw + 61.5px)); }
+    to   { transform: translate(-50%, -50%) translateX(0); }
+  }
+
+  /* ---------- Hero ---------- */
+  .ab-hero {
+    position: relative; z-index: 2; height: var(--ab-row);
+    display: flex; align-items: center; padding-left: var(--ab-cl); margin: 0;
+    font-family: var(--font-display); font-weight: 800;
+    font-size: clamp(56px, 7.8vw, 132px); line-height: 1; letter-spacing: -0.01em;
+    color: var(--color-neon);
+  }
+
+  /* ---------- Foto-Band ---------- */
+  .ab-photo { position: relative; z-index: 2; height: 342px; }
+  /* Foto an die Rasterlinien gekoppelt (staucht mit dem Grid): links = 2. Rasterlinie (x244),
+     rechts proportional in der About-Spalte. Transparenz-Verlauf direkt am Bild (Mask). */
+  .ab-photo-img {
+    position: absolute; top: 0; bottom: 0; overflow: hidden;
+    left: calc(var(--ab-490) * 0.49796);
+    right: calc(100% - var(--ab-L) - var(--ab-abw) * 0.638);
+    -webkit-mask-image: linear-gradient(to right, #000 0%, #000 55%, transparent 100%);
+            mask-image: linear-gradient(to right, #000 0%, #000 55%, transparent 100%);
+  }
+  .ab-photo-img img { width: 100%; height: 100%; object-fit: cover; object-position: 0% 50%; display: block; }  /* sehr breites Bild (4:1), Person ganz links → linke Kante zeigen */
+  /* ----- Aufploppende Fotos beim Hovern über das Foto (nur Desktop mit Maus) -----
+     Maße/Lage/Drehung aus Figma (Frame 1512 breit): Mittelpunkt relativ zur linken oberen Ecke
+     des Fotos (--pb = linke Fotokante, wie bei .ab-photo-img). Sie sind nur offen, solange die Maus
+     über dem großen Foto ist; die kleinen Fotos selbst fangen keine Maus ab (pointer-events: none),
+     sodass sie zurückploppen, sobald die Maus das große Foto verlässt. */
+  .ab-pops { display: none; }
+  @media (hover: hover) and (min-width: 768px) {
+    .ab-pops { display: block; position: absolute; inset: 0; z-index: 3; pointer-events: none; --pb: calc(var(--ab-490) * 0.49796); }
+    .ab-pop {
+      position: absolute; display: block; object-fit: cover; max-width: none;
+      left: calc(var(--pb) + var(--x)); top: var(--y); width: var(--w); height: var(--h);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      opacity: 0; pointer-events: none;
+      transform: translate(-50%, -50%) rotate(var(--r)) scale(0.35);
+      /* Zurückploppen: holt kurz Schwung (wird minimal größer) und schnurrt dann zusammen */
+      transition: transform .35s cubic-bezier(0.36, 0, 0.66, -0.56), opacity .2s ease .15s;
+    }
+    .ab-pop.p2 { transition-delay: 0s, .15s; }
+    .ab-pop.p4 { transition-delay: .05s, .2s; }
+    .ab-pop.p3 { transition-delay: .1s, .25s; }
+    .ab-pop.p3 { --x: 27.5px; --y: 129px;   --w: 140px; --h: 183px; --r: -12.7deg; }   /* Ski */
+    .ab-pop.p4 { --x: 228px;  --y: 89.5px;  --w: 180px; --h: 131px; --r: 6.7deg;  }   /* Kamera */
+    .ab-pop.p2 { --x: 192px;  --y: 274.5px; --w: 128px; --h: 157px; --r: 21.5deg; }   /* Locken */
+    .ab-photo:has(.ab-photo-img:hover) .ab-pop {
+      opacity: 1;
+      transform: translate(-50%, -50%) rotate(var(--r)) scale(1);
+      transition: transform .55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity .2s ease;   /* federndes Aufploppen */
+    }
+    /* nacheinander aufploppen */
+    .ab-photo:has(.ab-photo-img:hover) .ab-pop.p3 { transition-delay: 0s; }
+    .ab-photo:has(.ab-photo-img:hover) .ab-pop.p4 { transition-delay: .07s; }
+    .ab-photo:has(.ab-photo-img:hover) .ab-pop.p2 { transition-delay: .14s; }
+    /* Dabei legt sich ein graues Rechteck (= Hintergrundgrau des Fotos, 80 % Deckkraft) über das
+       große Foto → die kleinen Fotos heben sich besser ab. */
+    .ab-photo-img::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: rgba(220, 220, 220, 0.8); opacity: 0; transition: opacity .35s ease;
+    }
+    .ab-photo:has(.ab-photo-img:hover) .ab-photo-img::after { opacity: 1; transition: opacity 1s ease; }   /* langsam einblenden */
+  }
+  .ab-intro {
+    position: absolute; left: calc(var(--ab-L) + var(--ab-abw) * 0.44); right: calc(100% - var(--ab-cr)); width: auto; top: 50%; transform: translateY(-50%); margin: 0;
+    text-align: center; font-family: var(--font-display); font-weight: 500;
+    font-size: clamp(11px, 1vw, 15px);  /* Intro-Schrift staucht mit dem Frame (vw: % ginge in font-size auf die Eltern-Schrift) */
+    line-height: 1.6; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-off);
+  }
+  /* nach „… Weingarten, Germany." ein Zeilenumbruch (kein zusätzlicher Abstand) */
+  .ab-intro span { display: block; }
+
+  /* ---------- Inhalt ---------- */
+  .ab-content {
+    position: relative; z-index: 2;
+    margin-left: var(--ab-cl); width: calc(var(--ab-cr) - var(--ab-cl));
+    padding-top: 50px; padding-bottom: calc(var(--ab-row) * 2.5);   /* 2 Rasterzeilen mehr Luft → CURRENTLY kann mittig im Screen stehen */
+  }
+  .ab-sec { margin-bottom: 40px; }        /* Inhalt → nächste Überschrift (kompakter) */
+  .ab-sec:last-child { margin-bottom: 0; }
+  .ab-head {
+    display: flex; flex-wrap: wrap-reverse; justify-content: space-between; align-items: baseline; row-gap: 6px; margin-bottom: 24px;  /* Zahl springt über das Wort, wenn es eng wird */
+    filter: blur(4px);                    /* Überschriften-Blur Desktop */
+    color: var(--color-neon); font-family: var(--font-display); font-weight: 800;
+    font-size: 48px; line-height: 1; text-transform: uppercase; letter-spacing: -0.01em;
+    transition: filter .3s ease;
+  }
+  /* Beim Hovern über einen inhaltlichen Teil wird dessen Überschrift scharf
+     (auf Mobile: wenn die Sektion aufgeklappt ist). */
+  .ab-sec:hover .ab-head,
+  .ab-expandable.is-open .ab-head { filter: blur(0); }
+  .ab-body { margin: 0; font-family: var(--font-display); font-weight: 300; font-size: 1.05rem; line-height: 1.6; color: var(--color-off); }   /* = Fließtext Projektseiten (--pd-text) */
+  /* Tap-Zeile: Quadrat sitzt auf der Marker-Achse (Edu links, Exp rechts der Mitte),
+     Label mit 30px Abstand daneben. Das Quadrat teilt sich die Achse mit dem 1. Marker.
+     Prozente beziehen sich hier auf die Breite des Inhaltskastens (nicht die Seite),
+     deshalb schlichte % statt der Grid-Variablen (die enthalten seitenbezogene %). */
+  .ab-tap { position: relative; height: 34px; cursor: pointer; }
+  .ab-tap .sq { position: absolute; top: 0; width: 34px; height: 34px; border: 1.5px solid var(--color-neon); transition: opacity .2s; }
+  .ab-tap .lbl { position: absolute; top: 50%; transform: translateY(-50%); font-family: var(--font-display); font-weight: 500; font-size: clamp(10px, 0.93vw, 14px); letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-off); white-space: nowrap; }  /* schrumpft mit dem Frame wie der Intro-Text */
+  .ab-tap.edu .sq  { left: calc(22% - 17px); }
+  .ab-tap.edu .lbl { left: calc(22% + 39px); }     /* 17px (halbes Quadrat) + 22px Abstand = wie Marker↔Datum */
+  .ab-tap.exp .sq  { left: calc(78% - 17px); }
+  .ab-tap.exp .lbl { right: calc(22% + 39px); }
+
+  /* ===== Aufklappbare Sektionen (Education / Experience) — Figma 22-1291 ===== */
+  .ab-expandable .ab-head { cursor: pointer; }
+  /* Hover (nur Geräte mit Maus): Ist Education/Experience zugeklappt, zoomt beim Hovern der ganze
+     Kasten (Überschrift + „Tap to see the details") leicht heran → signalisiert „hier klicken".
+     Gezoomt werden die beiden Teile einzeln, aber um denselben Mittelpunkt (Mitte des Kastens:
+     48px Überschrift + 45px Abstand + 34px Tap-Zeile = 127px → Mitte bei 63.5px). So wirkt es wie
+     EIN Kasten, und die Abstände/Messungen der Seite bleiben unverändert (transform ändert kein Layout). */
+  @media (hover: hover) and (min-width: 768px) {
+    .ab-expandable:not(.is-open) { cursor: pointer; }
+    .ab-expandable .ab-head { transform-origin: 50% 63.5px; transition: filter .3s ease, transform .45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .ab-expandable .ab-tap  { transform-origin: 50% -29.5px; transition: transform .45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .ab-expandable:not(.is-open):hover .ab-head,
+    .ab-expandable:not(.is-open):hover .ab-tap { transform: scale(1.06); }
+  }
+  /* Eingeklappt: Tap-Gruppe exakt mittig zwischen dieser und der nächsten Überschrift
+     (gleicher Abstand oben zur eigenen Überschrift wie unten zur folgenden). */
+  .ab-expandable:not(.is-open) .ab-head { margin-bottom: 45px; }
+  .ab-expandable:not(.is-open) { margin-bottom: 45px; }
+  .ab-detail { display: none; }
+  /* Quadrat beim Ausklappen ausgegraut (wie der aktive Nav-Link im Header) */
+  .ab-expandable.is-open .ab-tap .sq { opacity: 0.5; }
+  .ab-expandable.is-open .ab-detail { display: block; position: relative; margin-top: 36px; }
+  /* Aufklappen: die einzelnen Timeline-Kästchen ploppen nacheinander auf (gestaffelt über --i,
+     mit leichtem Feder-Overshoot). Nur opacity/transform — verändert das Layout-Rect nicht,
+     das snapPhotos() direkt nach dem Öffnen fürs Raster-Snapping ausmisst. */
+  .ab-expandable.is-open .ab-tl-item {
+    animation: ab-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: calc(var(--i, 0) * 0.14s + 0.1s);   /* langsamer + größerer Versatz, damit jedes Kästchen wahrnehmbar aufploppt */
+  }
+  @keyframes ab-pop {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  /* Das Foto blendet sanft mit dem ersten Kästchen ein. */
+  .ab-expandable.is-open .ab-detail-photo { animation: ab-detailfade 0.6s ease 0.05s both; }
+  @keyframes ab-detailfade { from { opacity: 0; } to { opacity: 1; } }
+  /* Mobile: Foto fährt von außen in den Bildschirm (edu von rechts, exp von links). */
+  @keyframes ab-photo-slide-r { from { transform: translateX(32vw); }  to { transform: translateX(0); } }
+  @keyframes ab-photo-slide-l { from { transform: translateX(-32vw); } to { transform: translateX(0); } }
+
+  /* Foto: feste Rasterhöhe (Edu 5, Exp 3 Zeilen), blutet über die About-Spaltengrenze.
+     Education: Oberkante unter der Überschrift, Verlauf an der UNTERkante.
+     Experience: Unterkante liegt auf dem Grid auf, Verlauf an der OBERkante. */
+  .ab-detail-photo { position: absolute; overflow: hidden; }
+  .ab-detail-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .edu-detail .ab-detail-photo {
+    top: 0;
+    left: calc(-1 * (var(--ab-Wcol) + var(--ins-abs)));  /* Außenkante exakt auf der WORK-Linie (läuft mit dem Grid) */
+    right: 84%;                 /* Innenkante: kurz vor der Marker-Achse (22%) */
+    height: calc(var(--ab-row) * 6);   /* 6 Rasterkästchen hoch (per JS an die Timeline angepasst) */
+    /* Heller Bildhintergrund → längerer, weich auslaufender Verlauf (2 Reihen, sanfte Kurve),
+       damit der Übergang ins Schwarz so weich wirkt wie beim dunklen Experience-Foto */
+    --fade: linear-gradient(to top, #000 0, #000 calc(100% - var(--ab-row) * 2),
+      rgba(0,0,0,.8) calc(100% - var(--ab-row) * 1.55), rgba(0,0,0,.5) calc(100% - var(--ab-row) * 1.05),
+      rgba(0,0,0,.22) calc(100% - var(--ab-row) * .6), rgba(0,0,0,.06) calc(100% - var(--ab-row) * .25), transparent 100%);
+    -webkit-mask-image: var(--fade);
+            mask-image: var(--fade);
+  }
+  .edu-detail .ab-detail-photo img { object-position: 50% 28%; }  /* ganze Figur sichtbar */
+  .exp-detail .ab-detail-photo {
+    bottom: 0;                  /* Unterkante liegt auf dem Grid auf (Fuß der Timeline) */
+    left: 84%;                  /* Innenkante: kurz nach der Marker-Achse (78%) */
+    right: calc(-1 * (var(--ab-Ccol) + var(--ins-abs)));  /* Außenkante exakt am Seitenrand (läuft mit dem Grid) */
+    height: calc(var(--ab-row) * 4);   /* Standard 4 Rasterkästchen (per JS bis fast zum obersten Kästchen) */
+    -webkit-mask-image: linear-gradient(to top, #000 calc(100% - var(--ab-row)), transparent 100%);  /* Verlauf = oberstes Kästchen (1 Reihe) */
+            mask-image: linear-gradient(to top, #000 calc(100% - var(--ab-row)), transparent 100%);
+  }
+  .exp-detail .ab-detail-photo img { object-position: 50% 30%; }
+  .exp-detail .ab-detail-photo img { object-position: 50% 22%; }
+
+  /* Timeline — Marker-Achse direkt unter dem Quadrat (gleiche % wie das Quadrat) */
+  .ab-tl { list-style: none; margin: 0; padding: 0; position: relative; display: flex; flex-direction: column; }
+  /* Feste Item-Höhe statt gap → Marker haben IMMER den gleichen Abstand, unabhängig von der
+     Textlänge (sonst variiert der Abstand mit der Beschreibungslänge, v. a. bei Experience). */
+  .edu-detail .ab-tl-item { min-height: 186px; }
+  .exp-detail .ab-tl-item { min-height: 280px; }   /* mehr Luft zwischen den Experience-Einträgen */
+  /* Zusatzabstand (per JS), damit das unterste Kästchen auf einer Rasterlinie endet */
+  .ab-tl-item:not(:last-child) { margin-bottom: var(--tl-extra, 0px); }
+  .edu-detail .ab-tl  { margin-left:  calc(22% - 17px); }  /* 1. Marker-Achse = Quadrat-Achse */
+  .exp-detail .ab-tl  { margin-right: calc(22% - 17px); }
+  /* Verbindungslinie: dünn, weiß, nur vom 1. bis zum letzten Kästchen (Höhe per JS gesetzt) */
+  .ab-tl::before { content: ''; position: absolute; top: var(--tl-top, 17px); height: var(--tl-h, 0); width: 1px; background: var(--color-off); }
+  .tl-left::before  { left: 16.5px; }
+  .tl-right::before { right: 16.5px; }
+  .ab-tl-item { display: flex; flex-direction: column; }
+  .tl-row { display: flex; align-items: center; gap: 22px; }        /* Datum mittig neben dem Kästchen */
+  .tl-right .tl-row { justify-content: flex-end; }
+  .tl-mark { width: 34px; height: 34px; border: 1px solid var(--color-off); background: var(--color-ink); flex: none; position: relative; z-index: 1; }  /* dünn, weiß */
+  .tl-date { font-family: var(--font-display); font-weight: 500; font-size: clamp(10px, 0.93vw, 14px); letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-off); }  /* weiß, Größe = Tap-Label, schrumpft mit dem Frame */
+  .tl-desc { margin: 10px 0 0; font-family: var(--font-display); font-weight: 300; font-size: 1.05rem; line-height: 1.55; color: var(--color-off); }   /* = Fließtext Projektseiten */
+  .tl-left  .tl-desc { margin-left: 56px; }                         /* unter dem Datum ausgerichtet (Kästchen 34 + Abstand 22) */
+  .tl-right .tl-desc { margin-right: 56px; text-align: right; }
+  /* Experience: Kurzbeschreibung klebt am Datum (zieht sich in den Leerraum neben dem Kästchen
+     hoch); die Erläuterung darunter bekommt den Abstand, der sonst zwischen Datum und Text ist. */
+  .tl-desc.tl-lead { margin-top: -4px; }
+  /* Links in der Timeline (z. B. @mediendesign.rwu): unterstrichen, Hover neongrün */
+  .tl-desc a { color: inherit; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; transition: color .2s; }
+  .tl-desc a:hover { color: var(--color-neon); }
+  .tl-desc.tl-more { margin-top: 18px; }
+
+  /* ---------- Footer (schiebt sich beim Scrollen am Seitenende hoch — wie Work) ---------- */
+  .ab-main { position: sticky; z-index: 1; padding-top: var(--ab-row); }   /* top per JS (setStickyTop) */
+  /* Kein filter:blur mehr auf .ab-main — das zeichnete den gesamten (sehr hohen) Inhaltslayer
+     pro Scroll-Frame neu und ruckelte stark. Die Unschärfe macht jetzt der backdrop-filter des
+     Footers (GPU-beschleunigt, nur viewportgroß, Inhalt bleibt eingefroren). */
+  .ab-footer {
+    position: fixed; inset: 0; z-index: 40;
+    transform: translateY(100%);   /* wird per nativem Scroll gesetzt → kein transition */
+    will-change: transform;
+    pointer-events: none;
+    background: linear-gradient(to top,
+      rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.72) 55%,
+      rgba(0,0,0,0.4) 78%, rgba(0,0,0,0) 100%);
+    /* Frosted-Glass: unscharfer Hintergrund (der „festgehaltene" Inhalt), oben per Maske
+       ausgeblendet, damit keine harte Unschärfekante am oberen Footer-Rand entsteht. */
+    -webkit-backdrop-filter: blur(7px);
+            backdrop-filter: blur(7px);
+    -webkit-mask-image: linear-gradient(to top, #000 0%, #000 78%, transparent 100%);
+            mask-image: linear-gradient(to top, #000 0%, #000 78%, transparent 100%);
+  }
+  .ab-footer.is-active { pointer-events: auto; }
+  .ab-footer-inner { display: contents; }
+  .ab-footer-space { height: 100vh; }   /* unsichtbare Scrollzone am Seitenende */
+  @media (max-width: 767px) { .ab-footer-space { height: 130vh; } }   /* mobil: Footer steigt etwas langsamer auf */
+  .ab-footer-logo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding-top: var(--ab-row); }
+  .ab-footer-logo img { width: 15vw; max-width: 210px; height: auto; }
+  .ab-footer-bar {
+    position: absolute; left: 0; right: 0; bottom: 0; height: var(--ab-row);
+    display: grid; grid-template-columns: repeat(7, 1fr); align-items: center;
+    padding: 0;
+    font-family: var(--font-display); font-weight: 500; font-size: 0.875rem;
+    text-transform: uppercase; letter-spacing: 0.2em; color: var(--color-off);
+  }
+  .ab-footer-bar a { color: var(--color-off); text-decoration: none; transition: color .2s; }
+  .ab-footer-bar a:hover { color: var(--color-neon); }
+  .ab-footer-li { grid-column: 1; grid-row: 1; justify-self: center; }
+  .ab-footer-mail { grid-column: 4; grid-row: 1; justify-self: center; text-transform: none; letter-spacing: 0.1em; font-weight: 300; }
+  .ab-footer-legal { display: contents; }
+  .ab-footer-legal a:nth-of-type(1) { grid-column: 6; grid-row: 1; justify-self: center; }  /* Imprint – wie Landingpage */
+  .ab-footer-legal a:nth-of-type(2) { grid-column: 7; grid-row: 1; justify-self: center; }  /* Privacy – wie Landingpage */
+
+  /* ===== Mobile: vorläufiger, lesbarer Einspalter (eigenes Design folgt) ===== */
+  @media (max-width: 767px) {
+    .ab-grid { display: none; }   /* Desktop-Raster aus; Mobile nutzt ein CSS-Hintergrundraster */
+    .ab-header { display: none; }
+    .ab-reveal { animation: none; clip-path: none; }   /* Aufschiebe-Animation nur Desktop */
+    .ab-photo-img, .ab-intro { animation: none; }       /* Foto-Swoosh / Intro-Fade nur Desktop */
+    .aboutpage { padding-top: 25vw; overflow-x: clip; }   /* clip statt hidden: sonst funktioniert sticky nicht */
+    /* Sichtbares Hintergrundraster (4 Spalten + Reihen = Header-Höhe) auf .ab-main statt
+       .aboutpage: So bleibt das Raster beim Footer-Reveal mit dem „festgehaltenen" Inhalt
+       stehen (.ab-main wird translatiert), statt eigenständig nach oben zu scrollen. Die
+       Rasterlinien liegen dadurch unverändert bei doc-y = n*25vw − 1 (ab-main beginnt bei 25vw). */
+    .ab-main {
+      padding-top: 0;
+      background-image:
+        linear-gradient(to right,  var(--color-line) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--color-line) 1px, transparent 1px);
+      background-size: calc(100% / 4) 100%, 100% 25vw;
+      background-position: -1px 0, 0 -1px;
+    }
+    /* Ans Raster angepasst: Überschrift füllt Reihe 2 (25vw), Foto die Reihen 3–5 (75vw = 3 Reihen). */
+    .ab-hero { height: 25vw; display: flex; align-items: center; padding: 0 6vw; font-size: 13vw; }
+    .ab-photo { height: 75vw; margin-top: 0; }
+    .ab-photo-img { position: relative; left: 0; right: auto; width: 100%; height: 75vw; -webkit-mask-image: none; mask-image: none; }
+    /* Foto nach links schieben (14 % der Breite), damit rechts Platz für den Intro-Text bleibt */
+    .ab-photo-img img { width: 114%; max-width: none; margin-left: -14%; }
+    /* Intro-Text in Schwarz über die rechte Hälfte des Bildes */
+    .ab-intro { position: absolute; top: 0; right: 0; left: auto; width: 50%; height: 75vw; transform: none; margin: 0; padding: 4vw; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.875rem; line-height: 1.5; letter-spacing: 0.08em; color: #000; text-align: center; }
+    /* Unten viel Luft, damit man CURRENTLY in Ruhe lesen kann, bevor die Footer-Zone
+       (letzte Viewport-Höhe) erreicht wird und der Footer hochzufahren beginnt. */
+    .ab-content { margin-left: 0; width: auto; padding: 6vw 6vw 25vw; }   /* unten nur 1 Rasterzeile Luft vor der Fußzone */
+    .ab-sec { margin-bottom: 12vw; }
+    .ab-head { font-size: 9.5vw; filter: blur(1.2vw); margin-bottom: 5vw; }
+    .ab-body { font-size: var(--text-mobile); }   /* gut lesbar auf dem Handy (global.css) */
+    /* Tap-Zeile: absolute Positionierung zurücksetzen; Gruppe ganz links (Edu) bzw. ganz rechts (Exp) */
+    .ab-tap { position: static; height: auto; display: flex; align-items: center; gap: 22px; }
+    .ab-tap.edu { justify-content: flex-start; }
+    .ab-tap.exp { justify-content: flex-end; }
+    .ab-tap .sq { position: static; }
+    .ab-tap .lbl { position: static; transform: none; font-size: 0.875rem; }  /* = Navigationsleisten-Größe */
+    .ab-tap.edu .sq, .ab-tap.exp .sq { left: auto; }
+    .ab-tap.edu .lbl, .ab-tap.exp .lbl { left: auto; right: auto; }
+    /* Detail nach Figma 95-232: Timeline seitlich (Marker + Linie), Foto als Vollhöhen-Streifen
+       am äußeren Rand. Education: Foto rechts; Experience gespiegelt (Foto links). */
+    .ab-expandable.is-open .ab-detail { display: block; position: relative; margin-top: 6vw; }
+    .ab-detail-photo { position: absolute; top: 0; bottom: 0; margin: 0; width: 25vw; height: auto; }   /* genau 1 Rasterspalte */
+    /* mask:none hier (0,2,0) überschreibt die Desktop-Verläufe (gleiche Spezifität, später) → kein Übergang zur Transparenz */
+    /* height:auto hier (0,2,0) überschreibt die Desktop-Festhöhe (6/4 Reihen) → top+bottom bestimmen
+       die Höhe, damit snapPhotos() Ober- UND Unterkante aufs Raster einrasten kann. */
+    .edu-detail .ab-detail-photo { left: auto; right: -6vw; height: auto; -webkit-mask-image: none; mask-image: none; }   /* rechte Spalte (Linie 3→Rand) */
+    .exp-detail .ab-detail-photo { right: auto; left: -6vw; height: auto; -webkit-mask-image: none; mask-image: none; }   /* linke Spalte (Rand→Linie 1) */
+    .ab-detail-photo img { object-position: 50% 30%; }
+    .edu-detail .ab-detail-photo img { object-position: 32% 30%; }   /* Education: Ausschnitt nach rechts → Gesicht ganz im Bild */
+    /* Beim Öffnen fährt das Foto von außen herein (edu von rechts, exp gespiegelt von links);
+       der Text erscheint erst danach, wenn das Bild „reingefahren" ist. overflow-x:hidden der
+       .aboutpage beschneidet den Off-Screen-Teil. */
+    .ab-expandable.is-open .edu-detail .ab-detail-photo { animation: ab-photo-slide-r 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .ab-expandable.is-open .exp-detail .ab-detail-photo { animation: ab-photo-slide-l 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .ab-expandable.is-open .ab-tl-item { animation-delay: calc(var(--i, 0) * 0.1s + 0.32s); }   /* Text kurz nach dem Foto */
+    /* Eingeklappt: Tap-Gruppe mittig zwischen eigener und nächster Überschrift (gleicher Abstand oben/unten). */
+    .ab-expandable:not(.is-open) .ab-head { margin-bottom: 9vw; }
+    .ab-expandable:not(.is-open) { margin-bottom: 9vw; }
+    /* Timeline: Marker + Linie an der Seite, Datum/Text daneben; Text aus der Foto-Zone halten */
+    .edu-detail .ab-tl, .exp-detail .ab-tl { margin-left: 0; margin-right: 0; gap: 11vw; }
+    .edu-detail .ab-tl { gap: 7vw; }   /* Education hat mehr Einträge → Marker etwas enger */
+    .tl-left .tl-desc { margin-left: 13vw; } .tl-right .tl-desc { margin-right: 13vw; }
+    .tl-desc { font-size: var(--text-mobile); max-width: 46vw; } .tl-date { font-size: 2.9vw; }   /* Fließtext gut lesbar (global.css) */
+    .tl-right .tl-desc { margin-left: auto; }   /* Experience: Textblock rechtsbündig halten */
+
+    /* ---- Footer mobil: Logo + Wörter als unten verankerter Block (wie Work) ---- */
+    .ab-footer-inner { display: block; position: absolute; left: 0; right: 0; bottom: 9vw; text-align: center; }
+    .ab-footer-logo { position: static; inset: auto; padding: 0; display: block; margin: 0; }
+    .ab-footer-logo img { display: block; width: 28.8vw; max-width: 208px; margin: 0 auto 20px; }
+    .ab-footer-bar { position: static; inset: auto; height: auto; padding: 0; display: block; grid-template-columns: none; text-align: center; font-size: 2.6vw; letter-spacing: 0.12em; }
+    .ab-footer-mail, .ab-footer-li, .ab-footer-legal { grid-column: auto; justify-self: auto; }
+    .ab-footer-mail { display: block; }
+    .ab-footer-li { display: block; margin-top: 4.2vw; }
+    .ab-footer-legal { display: block; margin-top: 4.2vw; }
+    .ab-footer-legal a { display: block; }
+    .ab-footer-legal a + a { margin-top: 4.2vw; }
+  }
+</style>
+
+<!-- hmr-bump 2 -->
+
+<!-- hmr-bump 1 -->
+
+<!-- hmr-bump 1 -->
+
+<!-- hmr-bump 1 -->
+
+<!-- hmr-bump 1 -->
+
+<!-- hmr-bump 1 -->
+
+<!-- hmr-bump 1793200014 -->
+
+<!-- hmr-bump 1793301241 -->
+
+
+

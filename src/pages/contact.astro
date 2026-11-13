@@ -1,0 +1,278 @@
+---
+// CONTACT — Vollbild-Seite nach Figma 18-1060 (Desktop) / 18-1092 (Mobile).
+// Sichtbares Raster (Desktop 7 Spalten, Mobile 4), Header mit aktivem CONTACT,
+// großes Neon-Logo mittig, unten/darunter: LinkedIn · E-Mail · Imprint.
+// Aufbau sehr ähnlich dem Footer. Im zentralen Container (.ct-logo) läuft die Logo-Animation
+// (src/components/LogoAnimation.astro).
+import Layout from '../layouts/Layout.astro';
+import MobileHeader from '../components/MobileHeader.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import LogoAnimation from '../components/LogoAnimation.astro';
+import { NAV, EMAIL, LINKEDIN } from '../data/site';
+---
+
+<Layout>
+  <div class="contactpage bg-off text-ink">
+
+    <!-- Mobile-Header (fixiert, < md) — Hell-Variante für die Contact-Seite -->
+    <MobileHeader nav={NAV} active="Contact" theme="light" />
+
+    <!-- Desktop-Header: Logo links, Nav rechts (CONTACT aktiv) -->
+    <SiteHeader p="ct" active="Contact" />
+
+    <!-- Zentrales Logo als Animation (grün, läuft in Schleife) -->
+    <div class="ct-logo" id="ctLogo">
+      <LogoAnimation />
+    </div>
+
+    <!-- Mobil: fester Hinweis „text me" unter dem Logo (es gibt keinen Cursor) → öffnet direkt eine E-Mail -->
+    <a class="ct-hint" id="ctHint" href={`mailto:${EMAIL}`}>text me</a>
+
+    <!-- Cursor-Label „text me" (Desktop), wie „open" auf der Work-Seite -->
+    <div class="ct-cursor" id="ctCursor" aria-hidden="true">text me</div>
+
+    <!-- Kontakt-Leiste: LinkedIn · E-Mail · Imprint
+         (DOM-Reihenfolge = Mobile-Stapelung; Desktop ordnet per grid-column) -->
+    <div class="ct-bar">
+      <a class="ct-mail" href={`mailto:${EMAIL}`}>{EMAIL}</a>
+      <a class="ct-li" href={LINKEDIN} target="_blank" rel="noopener">LinkedIn</a>
+      <span class="ct-legal"><a href="/impressum">Imprint</a></span>
+      <span class="ct-privacy"><a href="/datenschutz">Privacy</a></span>
+    </div>
+  </div>
+</Layout>
+
+<style is:global>
+  .contactpage {
+    --ct-row: 170px;
+    --ct-line: #BEBEBE;   /* helle Rasterlinien auf weißem Grund (nach Figma 89-27 / 89-51) */
+    position: relative; height: 100vh; min-height: 620px; overflow: hidden;
+    isolation: isolate;   /* eigene Ebenen-Ordnung: Glow-Kreise (z -1) liegen über dem Raster, unter allem anderen */
+    background-color: var(--color-off);
+    /* Sichtbares Raster: senkrechte Linien (7 Spalten) + waagerechte Linien (Reihen) */
+    background-image:
+      linear-gradient(to right,  var(--ct-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--ct-line) 1px, transparent 1px);
+    background-size: calc(100% / 7) 100%, 100% var(--ct-row);
+    background-position: -1px 0, 0 -1px;
+  }
+
+  /* ---------- Desktop-Header (7-Spalten-Grid: Logo Sp. 1, Nav Sp. 5–7) ---------- */
+  .ct-header {
+    position: relative; z-index: 3; height: var(--ct-row);   /* über dem Glow, damit die Navi scharf schwarz bleibt */
+    display: grid; grid-template-columns: repeat(7, 1fr); align-items: center;
+  }
+  .ct-home { grid-column: 1; display: flex; align-items: center; justify-content: center; }
+  .ct-home { --logo-c: var(--color-ink); }   /* Monogramm schwarz auf hellem Grund (Hover: neongrün) */
+  .ct-nav {
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-weight: 500; font-size: 0.875rem;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--color-ink);
+    text-decoration: none; transition: color .2s, opacity .2s;
+  }
+  .ct-nav:hover { color: var(--color-neon); }
+  .ct-nav.is-active { opacity: 0.5; }
+  /* Ganze Rasterkachel ist klickbar und löst den Hover aus (Link füllt die volle Zeilenhöhe) */
+  .ct-home, .ct-nav { align-self: stretch; }
+  .ct-work    { grid-column: 5; }
+  .ct-about   { grid-column: 6; }
+  .ct-contact { grid-column: 7; }
+
+  /* ---------- Zentrales Logo (mittig; Platzhalter für die Animation) ---------- */
+  .ct-logo {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 2; display: flex; align-items: center; justify-content: center;
+    width: clamp(170px, 16vw, 232px);
+    /* Beim Öffnen der Seite: Logo + Glow ploppen gemeinsam von 0 auf 100 % auf. */
+    animation: ct-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s both;
+  }
+  /* Scale um die Mitte, Zentrier-Translate bleibt erhalten (Desktop). */
+  @keyframes ct-pop {
+    from { transform: translate(-50%, -50%) scale(0); }
+    to   { transform: translate(-50%, -50%) scale(1); }
+  }
+  /* Weicher weißer Kreis hinter dem Logo: radialer Verlauf in die Transparenz.
+     Liegt über dem Raster (blendet die Linien zur Mitte hin aus), aber unter Logo/Navi/Leiste. */
+  .ct-logo::before {
+    content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 58vw; height: 58vw; z-index: -1; pointer-events: none;
+    background: radial-gradient(circle closest-side,
+      var(--color-off) 0%, var(--color-off) 34%, rgba(249, 249, 249, 0) 100%);
+  }
+  .ct-logo .logo-anim { position: relative; }
+
+  /* ---------- Kontakt-Leiste (unten) ---------- */
+  .ct-bar {
+    /* kein z-index → keine eigene Ebene: so kann der Kreis (::before) HINTER das Logo,
+       während die Links (z 3) über dem Logo-Glow bleiben */
+    position: absolute; left: 0; right: 0; bottom: 0; height: var(--ct-row);
+    /* 7 Spalten – deckungsgleich mit dem sichtbaren Hintergrund-Raster */
+    display: grid; grid-template-columns: repeat(7, 1fr); align-items: center;
+    padding: 0;
+    font-family: var(--font-display); font-weight: 500; font-size: 0.875rem;   /* = Header */
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--color-ink);
+  }
+  .ct-bar a { position: relative; z-index: 3; color: var(--color-ink); text-decoration: none; transition: color .2s; }
+  .ct-bar a:hover { color: var(--color-neon); }
+  /* LinkedIn mittig im linken Rechteck (Sp. 1) */
+  .ct-li      { grid-column: 1; grid-row: 1; justify-self: center; }
+  /* Imprint 2. Spalte von rechts (Sp. 6), Privacy ganz rechts (Sp. 7) — wie Landingpage */
+  .ct-legal   { grid-column: 6; grid-row: 1; justify-self: center; }
+  .ct-privacy { grid-column: 7; grid-row: 1; justify-self: center; }
+  /* E-Mail mittig in der mittleren Spalte (Sp. 4), größer, mit Halbkreis-Glow dahinter */
+  .ct-mail  {
+    position: relative;
+    grid-column: 4; grid-row: 1; justify-self: center;
+    text-transform: none; font-weight: 300; letter-spacing: 0.1em; white-space: nowrap;
+    font-size: 1rem;
+  }
+  /* Oberer Teil eines großen Kreises hinter der E-Mail — gleiche Größe (58vw) und gleicher
+     radialer Verlauf wie der Kreis hinter dem Logo. Mittelpunkt an der Seiten-Unterkante unter
+     der E-Mail (Spalte 4 = Seitenmitte), sodass NUR der obere Teil sichtbar ist (unterer Teil wird
+     vom overflow:hidden abgeschnitten) → keine Rasterlinien queren die E-Mail.
+     Hängt an der Leiste (nicht an der E-Mail) und liegt auf z -1 → hinter dem grünen Logo. */
+  .ct-bar::before {
+    content: ''; position: absolute; z-index: -1; pointer-events: none;
+    left: 50%; top: 100%;
+    transform: translate(-50%, -50%);
+    width: 58vw; height: 58vw; border-radius: 50%;
+    background: radial-gradient(circle closest-side,
+      var(--color-off) 0%, var(--color-off) 34%, rgba(249, 249, 249, 0) 100%);
+  }
+
+  /* ---------- Cursor-Label „text me" (Desktop) ----------
+     Gleicher Stil wie „open" auf der Work-Seite. Neon, über dem (neon) Logo schwarz. */
+  .ct-cursor {
+    position: fixed; top: 0; left: 0; z-index: 100;
+    font-family: var(--font-display); font-weight: 500; font-size: 14px;
+    letter-spacing: 0.2em; text-transform: lowercase; color: var(--color-neon);
+    pointer-events: none; white-space: nowrap;
+    opacity: 0; transition: opacity .15s ease, color .12s ease;
+    transform: translate(-200px, -200px);
+  }
+  .ct-cursor.is-visible { opacity: 1; }
+  .ct-cursor.is-dark { color: var(--color-ink); }
+  .contactpage.is-clickable { cursor: pointer; }
+
+  .ct-hint { display: none; }   /* Hinweis „text me" nur mobil (Desktop hat das Cursor-Label) */
+
+  /* ===== Mobile (bis 767px): 4 Spalten, Logo + Links mittig gestapelt ===== */
+  @media (max-width: 767px) {
+    .contactpage {
+      height: auto; min-height: 100vh; padding-top: 25vw; overflow: hidden;
+      background-size: calc(100% / 4) 100%, 100% 25vw;   /* 4 Spalten, Reihe = Header-Höhe */
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .ct-header { display: none; }
+    .ct-cursor { display: none; }   /* Cursor-Label nur Desktop */
+
+    /* „text me" unter dem Logo: neon, pulsiert sanft (wächst leicht + blendet etwas ab) */
+    .ct-hint {
+      position: relative; z-index: 3;   /* über dem weißen Kreis des Logos */
+      display: inline-block; margin-top: 6vw; padding: 2vw 3vw; text-decoration: none;
+      font: 500 3vw var(--font-display); letter-spacing: 0.2em; text-transform: lowercase; color: var(--color-neon);
+      animation: ct-pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes ct-pulse {
+      0%, 100% { transform: scale(1);    opacity: 1; }
+      50%      { transform: scale(1.12); opacity: 0.55; }
+    }
+
+    .ct-logo { position: relative; top: auto; left: auto; transform: none; width: 40vw; max-width: 190px; animation-name: ct-pop-m; }   /* relativ (nicht absolut): Glow (::before) zentriert auf dem Logo; top/left zurücksetzen; Pop ohne Zentrier-Translate */
+    /* Weißer Kreis mobil größer und etwas nach unten versetzt → „text me" liegt mit auf dem weißen Grund */
+    .ct-logo::before {
+      width: 125vw; height: 125vw; transform: translate(-50%, calc(-50% + 14vw));
+      background: radial-gradient(circle closest-side,
+        var(--color-off) 0%, var(--color-off) 45%, rgba(249, 249, 249, 0) 100%);
+    }
+    .ct-bar {
+      /* 16vw oben + 2vw Innenabstand von „text me" = 18vw Luft (doppelt so viel wie vorher) */
+      position: static; width: 100%; height: auto; padding: 16vw 0 0; display: block; text-align: center;
+      font-size: 2.6vw; letter-spacing: 0.12em;   /* = Header (work/about/contact) */
+    }
+    .ct-mail, .ct-li, .ct-legal, .ct-privacy { display: block; grid-column: auto; justify-self: auto; }
+    .ct-mail { font-size: 2.6vw; letter-spacing: 0.1em; }   /* Mobile: wie Header */
+    .ct-bar::before { display: none; }                       /* Halbkreis nur Desktop */
+    .ct-li      { margin-top: 4.2vw; }
+    .ct-legal   { margin-top: 4.2vw; }
+    .ct-privacy { margin-top: 4.2vw; }
+  }
+
+  /* Mobile-Pop ohne Zentrier-Translate (dort zentriert der Flex-Container). */
+  @keyframes ct-pop-m {
+    from { transform: scale(0); }
+    to   { transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ct-logo { animation: none; }
+  }
+</style>
+
+<script>
+  // ===== Contact: Klick irgendwo auf die Seite → E-Mail an Isabelle =====
+  // Desktop: Cursor-Label „text me" folgt der Maus; ein Klick (außer auf Links) öffnet das
+  // Mailprogramm. Mobil: Antippen von Logo oder „text me" öffnet ebenfalls eine E-Mail.
+  // Kein Formular, kein externer Dienst → es werden keine Daten über die Website verschickt.
+  import { EMAIL } from '../data/site';
+  const MAILTO = `mailto:${EMAIL}`;
+
+  const page = document.querySelector('.contactpage');
+  const logo = document.getElementById('ctLogo');
+  const label = document.getElementById('ctCursor');
+  const desktop = window.matchMedia('(min-width: 768px) and (hover: hover)');
+
+  if (page && logo && label) {
+    // Liegt der Cursor auf dem grünen Logo (nicht nur im Rechteck drumherum)? Dafür wird das
+    // Logo-Bild einmal unsichtbar verkleinert in ein Canvas gezeichnet und dort die Deckkraft
+    // des Pixels unter dem Cursor abgefragt (transparente Stellen = nicht auf dem Logo).
+    // Das Bild hat genau das Feld der Animation; gemessen wird an der Animation (#la-svg).
+    const logoImg = new Image();
+    logoImg.src = '/logo/Logo-neon.png';
+    const logoBox = logo.querySelector('svg') || logo;
+    let alphaMap = null, mapW = 0, mapH = 0;
+    function buildAlphaMap() {
+      if (!logoImg || !logoImg.naturalWidth) return;
+      mapW = 300; mapH = Math.round(300 * logoImg.naturalHeight / logoImg.naturalWidth);
+      const c = document.createElement('canvas'); c.width = mapW; c.height = mapH;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(logoImg, 0, 0, mapW, mapH);
+      alphaMap = ctx.getImageData(0, 0, mapW, mapH).data;
+    }
+    if (logoImg.complete) buildAlphaMap(); else logoImg.addEventListener('load', buildAlphaMap);
+    function overLogo(x, y) {
+      if (!alphaMap || !logoImg) return false;
+      const r = logoBox.getBoundingClientRect();
+      if (x < r.left || x >= r.right || y < r.top || y >= r.bottom) return false;
+      const px = Math.floor((x - r.left) / r.width * mapW), py = Math.floor((y - r.top) / r.height * mapH);
+      return alphaMap[(py * mapW + px) * 4 + 3] > 40;   // Alpha-Kanal: deckend genug = grünes Logo
+    }
+
+    // Oberste Rasterzeile (Navigation) und unterste Rasterzeile (Kontakt-Leiste) sind KEINE
+    // Klickfläche für die E-Mail – dort gelten nur die Links selbst.
+    const headerEl = page.querySelector('.ct-header');
+    const barEl = page.querySelector('.ct-bar');
+    function inEdgeRow(y) {
+      const top = headerEl ? headerEl.getBoundingClientRect().bottom : -Infinity;
+      const bottom = barEl ? barEl.getBoundingClientRect().top : Infinity;
+      return y < top || y >= bottom;
+    }
+
+    // Label folgt der Maus; über Links und in Kopf-/Fußzeile ausgeblendet. Über dem Logo schwarz.
+    document.addEventListener('mousemove', (e) => {
+      if (!desktop.matches) return;
+      label.style.transform = `translate(${e.clientX + 18}px, ${e.clientY}px) translateY(-50%)`;
+      const onLink = (e.target instanceof Element && e.target.closest('a, button')) || inEdgeRow(e.clientY);
+      label.classList.toggle('is-visible', !onLink);
+      page.classList.toggle('is-clickable', !onLink);
+      if (!onLink) label.classList.toggle('is-dark', overLogo(e.clientX, e.clientY));
+    });
+    document.addEventListener('mouseleave', () => label.classList.remove('is-visible'));
+
+    // Klick irgendwo (außer auf Links) → Mailprogramm öffnen
+    page.addEventListener('click', (e) => {
+      if (e.target instanceof Element && e.target.closest('a, button')) return;
+      if (desktop.matches && inEdgeRow(e.clientY)) return;   // Navigation / unterste Zeile: keine E-Mail
+      if (desktop.matches || e.target instanceof Element && e.target.closest('#ctLogo')) window.location.href = MAILTO;
+    });
+  }
+</script>

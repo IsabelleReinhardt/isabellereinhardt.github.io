@@ -1,6 +1,19 @@
 @import "tailwindcss";
 
 /* =========================================================
+   SELBST-GEHOSTETE SCHRIFTEN (kein Google Fonts → DSGVO-freundlich)
+   Dateien liegen in /public/fonts/. Outfit ist ein Variable Font
+   (ein File deckt alle Schnitte 100–900 ab).
+   ========================================================= */
+@font-face {
+  font-family: "Outfit";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/outfit-variable.woff2") format("woff2");
+}
+
+/* =========================================================
    ZENTRALE DESIGN-TOKENS
    Farben & Schriften an EINER Stelle.
    Hier ändern  =  überall auf der Seite ändern.
@@ -8,7 +21,7 @@
 @theme {
   /* Farben */
   --color-ink:   #000000;   /* Schwarz (Vollton) – Grund & Typo */
-  --color-off:   #FEFEFE;   /* Off-White – Text auf Schwarz */
+  --color-off:   #F9F9F9;   /* Off-White – Text auf Schwarz + helle Flächen (seit 11.11.; vorher FEFEFE) */
   --color-beige: #E7D9C9;   /* warme Fläche              */
   --color-neon:  #97E818;   /* Akzent (Neongrün)         */
   --color-line:  #2A2A2C;   /* dünne Rasterlinien        */
@@ -16,8 +29,12 @@
   /* Schriften */
   --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-sans:    "Outfit", ui-sans-serif, system-ui, sans-serif;
-  --font-mono:    "Space Mono", ui-monospace, monospace;
+  --font-mono:    ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
+
+/* Fließtext-Größe auf dem Handy (About + Projekt-Detailseiten): ~15px auf dem iPhone,
+   nie kleiner als 14px und nie größer als 16px. */
+:root { --text-mobile: clamp(14px, 3.8vw, 16px); }
 
 /* Grund-Basis fürs ganze Dokument */
 @layer base {
@@ -29,3 +46,17 @@
     -webkit-font-smoothing: antialiased;
   }
 }
+
+/* ===== Monogramm in der Navigation (Header aller Seiten) =====
+   Das Logo-PNG dient als Schablone (mask) → die Farbe kommt aus CSS: weiß auf dunklen Seiten,
+   schwarz auf hellen (--logo-c), beim Hovern neongrün → zeigt, dass man darauf klicken kann. */
+.logo-mark {
+  display: block; height: 50px; aspect-ratio: 1223 / 1516;   /* Header-Logo (vorher 44px) */
+  background-color: var(--logo-c, var(--color-off));
+  -webkit-mask: url('/logo/Logo-white.png') center / contain no-repeat;
+          mask: url('/logo/Logo-white.png') center / contain no-repeat;
+  transition: background-color .2s ease;
+}
+.logo-mark.is-sm { height: 2.25rem; }   /* Mobile-Header (vorher 2rem) */
+@media (hover: hover) { a:hover > .logo-mark { background-color: var(--color-neon); } }   /* nur mit Maus (sonst bleibt es mobil nach dem Tippen grün) */
+a:focus-visible > .logo-mark { background-color: var(--color-neon); }

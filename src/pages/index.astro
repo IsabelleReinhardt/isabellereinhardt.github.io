@@ -1,46 +1,72 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import MobileHeader from '../components/MobileHeader.astro';
+import { projects as allProjects, COVER_ALT } from '../data/projects';
+import { NAV } from '../data/site';
+
+// Screenreader: Link-Name = Projekttitel + Kategorie, Bildbeschreibung aus COVER_ALT
+const slugOf = (href?: string) => (href ?? '').replace('/work/', '');
+const linkLabel = (href?: string) => {
+  const pr = allProjects.find((x) => x.slug === slugOf(href));
+  return pr ? `${pr.title}, ${pr.category.replace('\n', ' ')}` : 'Work';
+};
 
 // Ein einziges Maskenraster (7×5). Die Linien entstehen aus den gap-Zwischenräumen,
 // jede Zelle ist ein Maskenrahmen (overflow-hidden). Animiert man später die Zellgrößen,
 // bewegen sich Linien UND Inhalte zusammen.
 const projects = [
-  { name: 'Visitenkarten',           img: '/projects/visitenkarten.jpg',           r: 2, c: 4, zoom: false },
-  { name: 'Logo Animation',          img: '/projects/logo-animation.png',          r: 2, c: 6, zoom: false },
-  { name: 'Motion Musikvideo',       img: '/projects/motion-musikvideo.png',       r: 3, c: 7, zoom: false },
-  { name: 'Foto Langzeitbelichtung', img: '/projects/foto-langzeitbelichtung.jpg', r: 4, c: 5, zoom: true  },
-  { name: '3D Ayra',                 img: '/projects/3d-ayra.png',                 r: 4, c: 6, zoom: false },
-  { name: 'Portrait Foto',           img: '/projects/portrait-foto.jpg',           r: 5, c: 2, zoom: false },
-  { name: 'Imagefilm',              img: '/projects/imagefilm.png',               r: 5, c: 3, zoom: true  },
+  // Branding: Titelvideo (kleine Fassung in deinem Ordner „branding zam'"), Standbild = BrandingCover
+  // title = angezeigter Titel beim Hover/Antippen (\n = Zeilenumbruch); ohne title wird name gezeigt
+  { name: 'Branding',                img: "/projects/branding zam'/BrandingCover.png", r: 2, c: 4, zoom: true,
+    title: 'Baubuero\nzam’',
+    video: "/projects/branding zam'/LogoSchnittMotionLanding.mp4", href: '/work/branding-zam' },
+  { name: 'Logo Animation',          img: '/projects/logo-animation-web.jpg',          r: 5, c: 3, zoom: false,
+    title: 'Armed\nangels',
+    video: '/projects/logo animation/LogoAnimationLanding.mp4', href: '/work/logo-animation' },
+  // Orbit: Ausschnitt des Musikvideos (0:36–0:48, kleine Fassung in deinem Ordner), Standbild bis es läuft
+  { name: 'Orbit',                   img: '/projects/motion-musikvideo-web.jpg',       r: 3, c: 7, zoom: false,
+    title: 'Orbit',
+    video: '/projects/orbit musikvideo/OrbitLanding.mp4', href: '/work/orbit' },
+  { name: 'Comeback',                img: '/projects/foto comeback/Coverbild-web.jpg',   r: 5, c: 2, zoom: false,
+    title: 'Comeback', href: '/work/comeback' },
+  { name: '3D Ayra',                 img: '/projects/3d character/0001.jpg',       r: 4, c: 6, zoom: false,
+    title: 'Ayra', href: '/work/ayra' },
+  { name: 'Portrait Foto',           img: '/projects/foto portraits/Coverbild-web.jpg',   r: 4, c: 5, zoom: false,
+    title: 'Modern\nelvis', href: '/work/modern-elvis' },
+  // video = stummer Loop statt Standbild (img bleibt als Poster, bis das Video lädt)
+  // href  = Ziel beim Klick (ohne Angabe → /work)
+  { name: 'Imagefilm',              img: '/projects/imagefilm-web.jpg',               r: 2, c: 6, zoom: false,
+    title: 'Baubuero\nzam’',
+    video: '/projects/imagefilm/ImagefilmLanding.mp4', href: '/work/imagefilm' },
 ];
 
-const nav = [
-  { label: 'Work',    href: '/work',    c: 5 },
-  { label: 'About',   href: '/about',   c: 6 },
-  { label: 'Contact', href: '/contact', c: 7 },
-];
+// Navigation aus src/data/site.ts; c = Rasterspalte der Kachel (Desktop)
+const nav = NAV.map((n, k) => ({ ...n, c: 5 + k }));
+
+// Reihenfolge fürs gestaffelte Aufploppen der Bildkacheln (Lesereihenfolge: oben→unten, links→rechts)
+const imgReadOrder = [...projects].sort((a, b) => a.r - b.r || a.c - b.c);
 
 // ===== Mobile-Raster (4 Spalten, ALLE Kacheln gleich groß / quadratisch) =====
 // Scrollbares Raster; der verschwommene PORTFOLIO-Schriftzug liegt FIXIERT darüber (siehe Markup).
 const P = (name) => projects.find((p) => p.name === name)!;
 
 // Bild-Kacheln füllen die 'img'-Plätze der Reihe nach (oben→unten, links→rechts) — Anordnung wie Figma.
-const mImgOrder = ['Portrait Foto', 'Foto Langzeitbelichtung', 'Logo Animation', '3D Ayra', 'Imagefilm', 'Motion Musikvideo', 'Visitenkarten'];
+const mImgOrder = ['Branding', 'Portrait Foto', 'Imagefilm', '3D Ayra', 'Logo Animation', 'Orbit', 'Comeback'];
 
-// Layout-Matrix (je 4 Kacheln): 'logo' · 'nav' · 'img' · 'impr' · '' (leer)
+// Layout-Matrix (je 4 Kacheln): 'img' · 'name' · 'impr' · 'priv' · '' (leer).
+// Kopfzeile (Logo + WORK/ABOUT/CONTACT) liegt jetzt im fixierten <MobileHeader>.
 const mLayout = [
-  ['logo', 'nav', 'nav', 'nav'],   // Logo links + WORK/ABOUT/CONTACT
   ['',     '',    'img', ''  ],
   ['',     '',    '',    ''  ],
   ['',     'img', '',    ''  ],
   ['img',  '',    '',    'img'],
   ['',     'img', '',    ''  ],
   ['',     'img', '',    'img'],
-  ['',     '',    '',    'impr'],
+  ['name', '',    'impr', 'priv'],   // letzte Zeile: Name ganz links, dann Imprint/Privacy
 ];
 let _img = 0, _nav = 0;
 const mCells: any[] = mLayout.flatMap((row) => row.map((t) => {
-  if (t === 'img') return { t, p: P(mImgOrder[_img++]) };
+  if (t === 'img') { const oi = _img++; return { t, p: P(mImgOrder[oi]), oi }; }
   if (t === 'nav') return { t, item: nav[_nav++] };
   return { t };
 }));
@@ -71,57 +97,63 @@ const rows = [1, 2, 3, 4, 5];
 const cols = [1, 2, 3, 4, 5, 6, 7];
 ---
 
-<Layout title="Isabelle Reinhardt — Mediendesign Portfolio">
+<Layout>
   <section class="relative bg-ink text-off">
 
     <!-- ===== DESKTOP: EIN Maskenraster (Linien = gap, Zellen = Masken), feste Bildschirmhöhe ===== -->
-    <div class="hidden h-screen grid-cols-7 grid-rows-5 gap-px bg-line overflow-hidden md:grid">
+    <div class="pf-grid hidden h-screen grid-cols-7 grid-rows-5 gap-px bg-line overflow-hidden md:grid">
       {rows.map((r) => cols.map((c) => {
         const img = projects.find((p) => p.r === r && p.c === c);
-        const cellLetters = letters.filter((L) => L.r === r && L.c === c);
         const navItem = r === 1 ? nav.find((n) => n.c === c) : null;
         return (
           <div class="relative overflow-hidden bg-ink">
 
             {r === 1 && c === 1 && (
-              <a href="/" aria-label="Startseite" class="flex h-full w-full items-center justify-center">
-                <img src="/logo/NeonLogo-white.png" alt="Isabelle Reinhardt" class="h-11 w-auto" />
+              <a href="/" aria-label="Home" data-er="1" data-ec="1" class="pf-fixed flex h-full w-full items-center justify-center">
+                <span class="logo-mark" aria-hidden="true"></span>
               </a>
             )}
 
             {navItem && (
-              <a href={navItem.href} class="flex h-full w-full items-center justify-center font-display font-medium text-sm uppercase tracking-[0.2em] text-off transition-colors hover:text-neon">
+              <a href={navItem.href} data-er="1" data-ec={navItem.c} class="pf-fixed flex h-full w-full items-center justify-center font-display font-medium text-sm uppercase tracking-[0.2em] text-off transition-colors hover:text-neon">
                 {navItem.label}
               </a>
             )}
 
             {img && (
-              <a href="/work" data-project={img.name} class="group block h-full w-full">
-                <img
-                  src={img.img}
-                  alt={img.name}
-                  loading="lazy"
-                  class={`h-full w-full object-cover opacity-70 transition-opacity duration-300 group-hover:opacity-100 ${img.zoom ? 'scale-150' : ''}`}
-                />
+              <a href={img.href ?? '/work'} data-project={img.name} data-title={img.title} data-r={img.r} data-c={img.c} class="pf-tile group block h-full w-full" style={`--pi:${imgReadOrder.indexOf(img)}`} aria-label={linkLabel(img.href)}>
+                {img.video ? (
+                  <video
+                    src={img.video} poster={img.img} autoplay muted loop playsinline preload="auto"
+                    aria-hidden="true"
+                    class={`pf-video h-full w-full object-cover opacity-70 transition-opacity duration-300 group-hover:opacity-100 ${img.zoom ? 'scale-150' : ''}`}
+                  ></video>
+                ) : (
+                  <img
+                    src={img.img}
+                    alt={COVER_ALT[slugOf(img.href)] ?? ''}
+                    loading="lazy"
+                    class={`h-full w-full object-cover opacity-70 transition-opacity duration-300 group-hover:opacity-100 ${img.zoom ? 'scale-150' : ''}`}
+                  />
+                )}
               </a>
             )}
 
-            {cellLetters.map((L) => (
-              <span
-                class="pointer-events-none absolute font-display font-black uppercase leading-none text-neon"
-                style={`left:${L.l}vw; ${L.r === 3 ? PF_R3 : PF_R4}; font-size:${PF_SIZE};`}
-              >
-                {L.ch}
-              </span>
-            ))}
-
             {r === 5 && c === 1 && (
-              <div class="pointer-events-none flex h-full w-full items-center justify-center"><span id="hoverTitle" class="font-display font-medium text-sm lowercase tracking-[0.2em] text-neon">lookbook</span></div>
+              <div id="hoverTitle" data-er="5" data-ec="1" class="pf-fixed pointer-events-none flex h-full w-full items-center justify-center">
+                <span class="ht-box font-display font-medium text-sm lowercase leading-tight tracking-[0.2em] text-center text-neon"><span class="ht-text">{'isabelle\nreinhardt'}</span><span class="ht-caret" aria-hidden="true"></span></span>
+              </div>
+            )}
+
+            {r === 5 && c === 6 && (
+              <a href="/impressum" data-er="5" data-ec="6" class="pf-fixed flex h-full w-full items-center justify-center font-display font-medium text-sm uppercase tracking-[0.2em] text-off transition-colors hover:text-neon">
+                Imprint
+              </a>
             )}
 
             {r === 5 && c === 7 && (
-              <a href="/impressum" class="flex h-full w-full items-center justify-center font-display font-medium text-sm uppercase tracking-[0.2em] text-off transition-colors hover:text-neon">
-                Impressum
+              <a href="/datenschutz" data-er="5" data-ec="7" class="pf-fixed flex h-full w-full items-center justify-center font-display font-medium text-sm uppercase tracking-[0.2em] text-off transition-colors hover:text-neon">
+                Privacy
               </a>
             )}
           </div>
@@ -129,14 +161,40 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
       }))}
     </div>
 
-    <!-- ===== MOBILE: Maskenraster (4 Spalten, gleich große Kacheln) + fixierter PORTFOLIO ===== -->
-    <div class="grid grid-cols-4 gap-px bg-line md:hidden">
+    <!-- ===== PORTFOLIO-Buchstaben als EIGENES Overlay-Raster (Desktop) =====
+         Gleiche 7×5-Geometrie wie das Bild-Raster. Das Overlay REFLOWT synchron mit (gleiche
+         Track-Änderung per JS) → die Zell-MASKEN wandern exakt mit den Linien. Die Glyphen werden
+         dabei gegen-verschoben, sodass sie an ihrem Platz STEHEN bleiben, aber je nach wandernder
+         Linie mehr/weniger aus ihrer Maske sichtbar werden. pointer-events-none → Hover ans Bild-Raster. -->
+    <div class="pf-letters pointer-events-none absolute inset-0 z-30 hidden grid-cols-7 grid-rows-5 gap-px overflow-hidden md:grid" aria-hidden="true">
+      {rows.map((r) => cols.map((c) => {
+        const cellLetters = letters.filter((L) => L.r === r && L.c === c);
+        return (
+          <div class="relative overflow-hidden">
+            {cellLetters.map((L) => (
+              <span
+                data-lc={L.c}
+                class="pf-letter absolute font-display font-black uppercase leading-none text-neon"
+                style={`left:${L.l}vw; ${L.r === 3 ? PF_R3 : PF_R4}; font-size:${PF_SIZE}; --li:${letters.indexOf(L)};`}
+              >
+                {L.ch}
+              </span>
+            ))}
+          </div>
+        );
+      }))}
+    </div>
+
+    <!-- ===== MOBILE: fixierter Header + Maskenraster (4 Spalten) + fixierter PORTFOLIO ===== -->
+    <MobileHeader nav={nav} />
+    <div class="pt-[25vw] md:hidden">
+      <div class="grid grid-cols-4 gap-px bg-line">
       {mCells.map((cell) => (
           <div class="relative flex aspect-square items-center justify-center overflow-hidden bg-ink">
 
             {cell.t === 'logo' && (
-              <a href="/" aria-label="Startseite" class="flex h-full w-full items-center justify-center">
-                <img src="/logo/NeonLogo-white.png" alt="Isabelle Reinhardt" class="h-8 w-auto" />
+              <a href="/" aria-label="Home" class="flex h-full w-full items-center justify-center">
+                <span class="logo-mark is-sm" aria-hidden="true"></span>
               </a>
             )}
 
@@ -147,47 +205,205 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
             )}
 
             {cell.t === 'img' && (
-              <a href="/work" data-name={cell.p.name} class="m-proj relative block h-full w-full">
-                <img
-                  src={cell.p.img}
-                  alt={cell.p.name}
-                  loading="lazy"
-                  class={`m-img h-full w-full object-cover opacity-70 transition-opacity duration-300 ${cell.p.zoom ? 'scale-150' : ''}`}
-                />
+              <a href={cell.p.href ?? '/work'} data-name={cell.p.name} class="pf-tile m-proj relative block h-full w-full" style={`--pi:${cell.oi}`} aria-label={linkLabel(cell.p.href)}>
+                {cell.p.video ? (
+                  <video
+                    src={cell.p.video} poster={cell.p.img} autoplay muted loop playsinline preload="auto"
+                    aria-hidden="true"
+                    class={`pf-video m-img h-full w-full object-cover opacity-70 transition-opacity duration-300 ${cell.p.zoom ? 'scale-150' : ''}`}
+                  ></video>
+                ) : (
+                  <img
+                    src={cell.p.img}
+                    alt={COVER_ALT[slugOf(cell.p.href)] ?? ''}
+                    loading="lazy"
+                    class={`m-img h-full w-full object-cover opacity-70 transition-opacity duration-300 ${cell.p.zoom ? 'scale-150' : ''}`}
+                  />
+                )}
                 <span class="m-title pointer-events-none absolute inset-0 flex items-center justify-center p-1.5 text-center font-display font-medium text-[2.4vw] lowercase leading-tight tracking-[0.1em] text-neon opacity-0 transition-opacity duration-300">
-                  {cell.p.name === 'Foto Langzeitbelichtung' ? (
-                    <Fragment>Foto Langzeit<br />belichtung</Fragment>
+                  {cell.p.title ? (
+                    <Fragment>{cell.p.title.split('\n').map((l, k) => (k ? <Fragment><br />{l}</Fragment> : l))}</Fragment>
                   ) : cell.p.name}
                 </span>
               </a>
             )}
 
+            {/* Name wie am Desktop: neongrün, klein geschrieben, zweizeilig */}
+            {cell.t === 'name' && (
+              <span class="text-center font-display font-medium text-[2.4vw] lowercase leading-tight tracking-[0.12em] text-neon">
+                isabelle<br />reinhardt
+              </span>
+            )}
+
             {cell.t === 'impr' && (
               <a href="/impressum" class="flex h-full w-full items-center justify-center font-display font-medium text-[2.4vw] uppercase tracking-[0.12em] text-off transition-colors hover:text-neon">
-                Impressum
+                Imprint
+              </a>
+            )}
+
+            {cell.t === 'priv' && (
+              <a href="/datenschutz" class="flex h-full w-full items-center justify-center font-display font-medium text-[2.4vw] uppercase tracking-[0.12em] text-off transition-colors hover:text-neon">
+                Privacy
               </a>
             )}
           </div>
       ))}
+      </div>
     </div>
 
     <!-- Fixierter, verschwommener PORTFOLIO-Schriftzug (nur Mobile): fix in der Mitte der 3. Rasterreihe
          (2,5 Reihen × 25vw = 62.5vw), bleibt beim Scrollen an Ort und Stelle -->
     <div class="pointer-events-none fixed inset-x-0 top-[62.5vw] z-40 flex -translate-y-1/2 justify-center md:hidden">
-      <span class="font-display font-black uppercase leading-none tracking-tight text-neon" style="font-size: 16vw; filter: blur(1.6vw);">Portfolio</span>
+      <span class="pf-mobile font-display font-black uppercase leading-none tracking-tight text-neon" style="font-size: 16vw; filter: blur(1.6vw);">Portfolio</span>
     </div>
   </section>
 </Layout>
 
 <script>
-  // Desktop: Beim Hovern über ein Projekt dessen Titel unten links anzeigen
+  // Desktop: Grid-Linien pulsieren im Ruhezustand sanft & zufällig (jede Linie ±10px in ihrer
+  // Achse); beim Hovern über ein Bild wächst stattdessen dessen Zelle um 30px. Beides wird über
+  // Linien-Offsets (je 1 Wert pro innerer Linie) ausgedrückt und per Feder animiert. Die
+  // PORTFOLIO-Buchstaben verhalten sich identisch: ihr Overlay-Raster reflowt mit (Masken wandern),
+  // die Glyphen werden exakt gegen-verschoben → sie stehen still, werden aber je nach Linie
+  // mehr/weniger aus ihrer Maske sichtbar.
+  const pfGrid = document.querySelector('.pf-grid');
+  if (pfGrid) {
+    const COLS = 7, ROWS = 5, GROW = 30, VLINES = COLS - 1, HLINES = ROWS - 1, RANGE = 20;
+    const pfLetters = document.querySelector('.pf-letters');
+    const letterEls = pfLetters ? [...pfLetters.querySelectorAll('.pf-letter')] : [];
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Hover-Deltas einer Spur → in kumulative LINIEN-Offsets umrechnen (nur die 2 Rahmenlinien ≠ 0).
+    const deltas = (n, hover) => {
+      const d = new Array(n + 1).fill(0);
+      if (hover) {
+        d[hover] += GROW;
+        const hasL = hover > 1, hasR = hover < n;
+        if (hasL && hasR) { d[hover - 1] -= GROW / 2; d[hover + 1] -= GROW / 2; }
+        else if (hasL) d[hover - 1] -= GROW;
+        else if (hasR) d[hover + 1] -= GROW;
+      }
+      return d;
+    };
+    const cumLineOffsets = (n, lines, hover) => {   // → Offsets der inneren Linien 1..lines
+      const d = deltas(n, hover), o = new Array(lines + 1).fill(0);
+      let acc = 0; for (let i = 1; i <= lines; i++) { acc += d[i]; o[i] = acc; }
+      return o;
+    };
+
+    // Pulsier-Parameter je innerer Linie (zwei überlagerte Sinus → organisch, nicht periodisch).
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const mkPulse = (n) => Array.from({ length: n + 1 }, () => ({ f1: rnd(0.4, 0.9), p1: rnd(0, 6.283), f2: rnd(0.7, 1.4), p2: rnd(0, 6.283) }));
+    const colPulse = mkPulse(VLINES), rowPulse = mkPulse(HLINES);
+    const pulse = (pp, t) => RANGE * (0.6 * Math.sin(pp.f1 * t + pp.p1) + 0.4 * Math.sin(pp.f2 * t + pp.p2));
+
+    // Aktuelle Linien-Offsets; nähern sich pro Frame weich ihrem Ziel an (ease-out „Swoosh",
+    // kein Nachfedern/Bounce — passt zu den übrigen Seiten-Animationen).
+    const colCur = new Array(VLINES + 1).fill(0);
+    const rowCur = new Array(HLINES + 1).fill(0);
+    const EASE = 0.1;   // Annäherungsrate pro Frame (~0,5s Swoosh)
+    const fixedEls = [...pfGrid.querySelectorAll('.pf-fixed')];   // Logo, Nav, Titel, Imprint, Privacy
+    const CL = (k) => (k >= 1 && k <= VLINES) ? colCur[k] : 0;    // Offset vertikaler Linie k (Rand = 0)
+    const RL = (k) => (k >= 1 && k <= HLINES) ? rowCur[k] : 0;    // Offset horizontaler Linie k (Rand = 0)
+    let hover = null;   // {c, r} oder null
+
+    const baseC = `(100% - ${VLINES}px) / ${COLS}`, baseR = `(100% - ${HLINES}px) / ${ROWS}`;
+    const tpl = (count, lines, base, cur) => {
+      let out = [], prev = 0;
+      for (let i = 1; i <= count; i++) {
+        const o = i <= lines ? cur[i] : 0, d = o - prev; prev = o;
+        out.push(Math.abs(d) < 0.01 ? `calc(${base})` : `calc(${base} ${d > 0 ? '+' : '-'} ${Math.abs(d).toFixed(2)}px)`);
+      }
+      return out.join(' ');
+    };
+    function apply() {
+      const colTpl = tpl(COLS, VLINES, baseC, colCur), rowTpl = tpl(ROWS, HLINES, baseR, rowCur);
+      pfGrid.style.gridTemplateColumns = colTpl; pfGrid.style.gridTemplateRows = rowTpl;
+      if (pfLetters) { pfLetters.style.gridTemplateColumns = colTpl; pfLetters.style.gridTemplateRows = rowTpl; }
+      const dy = rowCur[3] || 0;   // Linie zwischen Zeile 3 und 4 = Anker aller Buchstaben
+      for (const el of letterEls) {
+        const lc = +el.dataset.lc, dx = (lc - 1 >= 1 && lc - 1 <= VLINES) ? colCur[lc - 1] : 0;
+        el.style.transform = `translate(${(-dx).toFixed(2)}px, ${(-dy).toFixed(2)}px)`;
+      }
+      // Feste UI-Elemente (Logo, Nav, Titel, Imprint, Privacy) an Original-Position halten:
+      // Gegen-Verschiebung = Verschiebung der Zellmitte (Mittel der angrenzenden Linien-Offsets).
+      for (const el of fixedEls) {
+        const er = +el.dataset.er, ec = +el.dataset.ec;
+        const cx = (CL(ec - 1) + CL(ec)) / 2, cy = (RL(er - 1) + RL(er)) / 2;
+        el.style.transform = `translate(${(-cx).toFixed(2)}px, ${(-cy).toFixed(2)}px)`;
+      }
+    }
+
+    function frame(now) {
+      const t = now / 1000;
+      let colT, rowT;
+      if (hover) { colT = cumLineOffsets(COLS, VLINES, hover.c); rowT = cumLineOffsets(ROWS, HLINES, hover.r); }
+      else if (reduce) { colT = new Array(VLINES + 1).fill(0); rowT = new Array(HLINES + 1).fill(0); }
+      else { colT = [0]; for (let i = 1; i <= VLINES; i++) colT[i] = pulse(colPulse[i], t);
+             rowT = [0]; for (let j = 1; j <= HLINES; j++) rowT[j] = pulse(rowPulse[j], t); }
+      for (let i = 1; i <= VLINES; i++) colCur[i] += (colT[i] - colCur[i]) * EASE;
+      for (let j = 1; j <= HLINES; j++) rowCur[j] += (rowT[j] - rowCur[j]) * EASE;
+      apply();
+      requestAnimationFrame(frame);
+    }
+
+    pfGrid.querySelectorAll('a[data-project]').forEach((el) => {
+      const c = +el.getAttribute('data-c'), r = +el.getAttribute('data-r');
+      el.addEventListener('mouseenter', () => { hover = { c, r }; });
+      el.addEventListener('mouseleave', () => { hover = null; });
+    });
+    apply();
+    requestAnimationFrame(frame);
+  }
+
+  // Desktop: Beim Hovern über ein Projekt dessen Titel unten links anzeigen —
+  // Schreibmaschinen-Effekt: altes Wort schnell löschen, neues eintippen; Block-Cursor am Ende.
   const ht = document.getElementById('hoverTitle');
   if (ht) {
+    const textEl = ht.querySelector('.ht-text');
+    const caret = ht.querySelector('.ht-caret');
+    const title = (name) => name || 'isabelle\nreinhardt';
+    const SPEED = 26;   // ms pro Zeichen (schnell)
+    let timer = null;
+    const typeTo = (target) => {
+      if (timer) clearInterval(timer);
+      if (caret) caret.classList.add('is-typing');   // beim Tippen Cursor solide
+      const start = textEl.textContent;
+      let i = start.length, phase = i > 0 ? 'del' : 'type';
+      timer = setInterval(() => {
+        if (phase === 'del') {
+          textEl.textContent = start.slice(0, --i);
+          if (i <= 0) { phase = 'type'; i = 0; }
+        } else {
+          textEl.textContent = target.slice(0, ++i);
+          if (i >= target.length) { clearInterval(timer); timer = null; if (caret) caret.classList.remove('is-typing'); }
+        }
+      }, SPEED);
+    };
     document.querySelectorAll('a[data-project]').forEach((el) => {
-      el.addEventListener('mouseenter', () => { ht.textContent = el.getAttribute('data-project') || 'lookbook'; });
-      el.addEventListener('mouseleave', () => { ht.textContent = 'lookbook'; });
+      el.addEventListener('mouseenter', () => typeTo(el.getAttribute('data-title') || title(el.getAttribute('data-project'))));
+      el.addEventListener('mouseleave', () => typeTo('isabelle\nreinhardt'));
     });
   }
+
+  // Video-Kacheln sicher starten. Das autoplay-Attribut allein reicht nicht überall: Safari (v. a. im
+  // Stromsparmodus) oder blockierte Autoplay-Einstellungen ignorieren es still. Deshalb:
+  // stumm erzwingen → play() sofort versuchen → bei Ablehnung beim ersten Scrollen/Tippen/Mausbewegen
+  // erneut versuchen (s. u.). Sichtbare Kachel spielt, die ausgeblendete (Desktop/Mobil) bleibt pausiert.
+  const pfVideos = [...document.querySelectorAll('video.pf-video')];
+  const tryPlay = () => pfVideos.forEach((v) => {
+    if (v.offsetParent === null) { v.pause(); return; }   // display:none (andere Ansicht) → nicht abspielen
+    v.muted = true; v.defaultMuted = true; v.playsInline = true;
+    if (v.paused) v.play().catch(() => {});
+  });
+  tryPlay();
+  // Nur echte Nutzer-Gesten (Klick, Tippen, Taste) schalten Autoplay frei. Scrollen und Mausbewegen
+  // zählen für Safari NICHT – im Stromsparmodus startet das Video daher erst beim ersten Klick/Tippen.
+  ['pointerup', 'touchend', 'click', 'keydown'].forEach((ev) =>
+    window.addEventListener(ev, tryPlay, { passive: true, capture: true }));
+  window.addEventListener('scroll', tryPlay, { passive: true });   // reicht in normalen Browsern
+  window.addEventListener('resize', tryPlay);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) tryPlay(); });
 
   // Mobile: 1. Klick auf ein Bild → Titel + 50% Deckkraft; 2. Klick → Projekt öffnen.
   document.querySelectorAll('.m-proj').forEach((a) => {
@@ -203,7 +419,44 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
 </script>
 
 <style is:global>
+  /* Hover-Vergrößerung: die Spalten-/Zeilengröße der gehoverten Zelle wächst (per JS) → Bild UND
+     die angrenzenden Gridlinien wandern gekoppelt nach außen. Weiche Transition der Tracks. */
+  /* Hinweis: Bild-Raster, Buchstaben-Overlay und die Glyphen-Verschiebung werden pro Frame per JS
+     (Feder-Animation) gesetzt — daher KEINE CSS-Transition hier (die würde die Frame-Updates stören). */
+
+  /* Projekttitel unten links (Desktop): Schreibmaschinen-Effekt — altes Wort wird
+     schnell zeichenweise gelöscht, das neue eingetippt. Am Textende blinkt ein
+     Block-Cursor (Textrechteck); beim Tippen steht er (solide), im Ruhezustand blinkt er. */
+  .ht-box { display: inline-block; white-space: pre-line; }
+  .ht-caret {
+    display: inline-block; width: 0.55em; height: 1.05em;
+    margin-left: 0.1em; vertical-align: -0.15em;
+    background: var(--color-neon);
+    animation: ht-blink 1.05s steps(1, end) infinite;
+  }
+  .ht-caret.is-typing { animation: none; opacity: 1; }   /* während des Tippens solide */
+  @keyframes ht-blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .ht-caret { animation: none; } }
+
   /* Mobile-Projektkacheln: geöffneter Zustand (nach dem 1. Klick) */
   .m-proj.is-open .m-img   { opacity: 0.5; }
   .m-proj.is-open .m-title { opacity: 1; }
+
+  /* ---------- Landing-Entrée ---------- */
+  /* PORTFOLIO-Buchstaben erscheinen nacheinander langsam (gestaffelt über --li). */
+  .pf-letter { animation: pf-letter-in 1s ease 0.25s both; }   /* alle Buchstaben gleichzeitig, langsam einblenden */
+  @keyframes pf-letter-in { from { opacity: 0; } to { opacity: 1; } }
+  .pf-mobile { animation: pf-letter-in 1.1s ease 0.25s both; }   /* Mobile: ganzes Wort langsam einblenden */
+
+  /* Projektbilder ploppen nacheinander auf. Scale+Fade am Wrapper (nicht am <img>),
+     damit der Bild-Zoom (scale-150) erhalten bleibt. */
+  .pf-tile { animation: pf-tile-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--pi, 0) * 0.12s + 0.15s); }
+  @keyframes pf-tile-pop { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pf-letter, .pf-mobile, .pf-tile { animation: none; }
+  }
 </style>
+
+<!-- hmr-bump 1 -->
+

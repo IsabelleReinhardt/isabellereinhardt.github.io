@@ -49,7 +49,7 @@ durch ruhige Flächen.
 | Rolle              | Name    | HEX       |
 |--------------------|---------|-----------|
 | Grund / Typo       | Schwarz | `#0E0E10` |
-| Fläche / Kontrast  | Weiß    | `#FFFFFF` |
+| Fläche / Kontrast  | Weiß    | `#F9F9F9` (Token `--color-off`, seit 11.11.; vorher `#FEFEFE`) |
 | warme Fläche       | Beige   | `#E7D9C9` |
 | **Akzent**         | Neon    | `#CBF43C` |
 
@@ -72,12 +72,17 @@ durch ruhige Flächen.
 
 ### Logo
 
-- Aktuelles iR-Monogramm soll **moderner & flexibler** werden (Isabelle
-  überarbeitet es im Grafik-Kurs). Richtung: **monolinien iR-Monogramm**, dessen
-  i-Punkt ein **Neon-Kreis** ist. Eine Strichstärke, skaliert von Favicon bis
-  Plakat, als Muster kachelbar.
-- **Website logo-agnostisch bauen:** bis das neue Logo fertig ist, trägt ein
-  klarer Schrift-Schriftzug die Marke. Nichts soll aufs Logo warten müssen.
+- **Neues Logo seit 09.11.2026:** flächiges R-Monogramm mit Kreis (Isabelles Entwurf).
+  Dateien (transparent, aus der schwarzen Vorlage freigestellt):
+  `public/logo/Logo-white.png` (Schablone für die Navigation) und `public/logo/Logo-neon.png`
+  (Footer, Contact-Mitte). Seitenverhältnis 1223 : 1516.
+- Navigation: `.logo-mark` in `global.css` nutzt Logo-white.png als Maske → Farbe per CSS
+  (weiß/schwarz, Hover neongrün). Logo austauschen = nur die PNG-Dateien ersetzen
+  (+ `aspect-ratio` in `.logo-mark` anpassen, falls sich das Format ändert).
+- Favicon/Apple-Touch-Icon/Teilen-Vorschau sind aus Logo-neon.png erzeugt (neongrün auf Schwarz,
+  seit 13.11. randlos schwarz + größeres Logo); Favicon-Links tragen `?v=4` → bei neuem Favicon die Zahl erhöhen.
+- Alte Monogramm-Dateien `NeonLogo-white.png`, `NeonLogo-footer.png` werden nicht mehr genutzt
+  (vor dem Löschen Isabelle fragen). Eine Logo-Animation ist geplant (Ort/Stil: Isabelle erklärt noch).
 
 ### Bewegung
 
@@ -102,17 +107,37 @@ Schlank. Seiten:
 Projekte als **Content Collection** – ein Projekt = eine Inhalts-Datei mit
 `category`/`tags`. So wächst das Portfolio, ohne Layout/Code umzubauen.
 
-### Angepeilte Ordnerstruktur
+### Ordnerstruktur (tatsächlicher Stand 09.11.2026)
 
 ```
 src/
-├─ styles/    tokens.css (Farben & Schriften), global.css (Reset + Basis)
-├─ layouts/   Layout.astro (head, Nav, Footer, Slot)
-├─ components/ Nav.astro, Footer.astro
-├─ content/   config.ts (Schema), projekte/ (Projekt-Dateien)
-└─ pages/     index.astro, work.astro, about.astro, work/[slug].astro
-public/       Bilder, Videos, Favicon
+├─ data/
+│  ├─ site.ts        Seitentitel, Beschreibung, URL, E-Mail, LinkedIn, Navigation – EINE Stelle
+│  └─ projects.ts    alle Projekte (Texte EN/DE, Medien, Galerien, Alt-Texte), COVER_ALT
+├─ components/
+│  ├─ SiteHeader.astro   Desktop-Header (Work, About, Contact, Projektseiten) – Präfix-Prop p
+│  ├─ SiteFooter.astro   Footer, der am Seitenende hochfährt (Work, About, Projektseiten)
+│  ├─ MobileHeader.astro Mobile-Header (alle Seiten)
+│  └─ LangToggle.astro   EN/DE-Schalter (About, Projektseiten, Rechtstexte)
+├─ layouts/  Layout.astro (head: Titel, Beschreibung, Favicon, Teilen-Vorschau), Legal.astro
+├─ styles/   global.css (Tokens + Basis)
+└─ pages/    index, work, work/[slug], about, contact, impressum, datenschutz, 404
+public/      nur Dateien, die die Seite wirklich nutzt (Web-Fassungen), favicon.*, og-image.jpg
 ```
+
+**Header/Footer ändern:** Links/Beschriftungen in `src/data/site.ts` bzw. im Baustein
+(`SiteHeader`/`SiteFooter`). Aussehen/Position steuert jede Seite über ihr Klassen-Präfix
+(`wp-` Work, `ab-` About, `pd-` Projektseite, `ct-` Contact), z. B. `.wp-home`,
+`.wp-nav`, `.wp-work`, `.wp-footer-bar`. Startseite, 404 und Rechtstexte haben eigene Kopfzeilen
+(anderer Aufbau), nutzen aber dieselben Daten.
+
+**Seitentitel/Beschreibung** sind auf allen Seiten gleich („Isabelle Reinhardt - Portfolio",
+englisch) → nur in `src/data/site.ts` ändern. Teilen-Vorschau = `public/og-image.jpg` (1200×630,
+nur das Monogramm im Raster). **404-Seite** (`src/pages/404.astro`) = Maskenraster wie die Startseite
+(pulsierende Linien), Ziffern in Zeile 3 / Spalte 3–5, neigen sich zum Cursor.
+**Projekt-Hero:** `hero.mediaPos` in projects.ts verschiebt den Ausschnitt von Cover + Video (Ayra: '50% 5%').
+**Screenreader-Texte** (aria-label, alt) sind englisch; Bildbeschreibungen der Titelbilder in
+`COVER_ALT` (projects.ts), Galeriebilder über `alt` am Galerie-Eintrag.
 
 Design und Inhalt bleiben getrennt → Aussehen jederzeit änderbar, ohne
 Projekttexte anzufassen (und umgekehrt).
@@ -153,17 +178,31 @@ Dinge her (Portfolio gilt in DE i. d. R. als impressumspflichtig):
 Solange die Seite leer/privat ist und niemand den Link hat, ist das Risiko gering
 – aber vor dem aktiven Einsatz erledigen.
 
-## Nächste Schritte (Reihenfolge)
+## ✅ Checkliste vor dem Online-Gang (Isabelle daran erinnern!)
 
-1. Aktuellen Projektstand ansehen (astro.config, src-Struktur, index).
-2. `styles/tokens.css` – zentrale Design-Tokens (Farben oben, Schriftvariablen).
-3. `styles/global.css` – Reset, Basis, Font-Einbindung.
-4. `layouts/Layout.astro` – Seitengerüst.
-5. `components/Nav.astro` + `Footer.astro`.
-6. `index.astro` auf Layout umstellen (erster Hero).
-7. `content/config.ts` + erste Projekt-Datei (Schema mit Titel, Kategorie, Tags).
-8. `work.astro` (filterbar) + `work/[slug].astro`.
-9. Lokal testen (`npm run dev`), Responsivität & GitHub-Pages-Pfade prüfen.
+Stand 09.11.2026. **Bevor die Seite veröffentlicht wird, Isabelle aktiv an jeden offenen Punkt erinnern:**
+
+- [x] Adresse in Impressum + Datenschutz: Waldseerstraße 23, 88250 Weingarten (09.11.)
+- [x] `lang="en"` im Layout, Seitentitel/Beschreibung fest, Teilen-Vorschau, Favicon (Monogramm), 404-Seite (09.11.)
+      Favicon-Links tragen `?v=2` (Browser-Cache) – bei neuem Favicon die Zahl erhöhen.
+- [x] Screenreader-Texte englisch, Alt-Texte für die wichtigsten Bilder (09.11. – Isabelle prüft die Texte)
+- [x] Die 5 großen Startseiten-/About-Bilder als `-web.jpg` verkleinert (09.11.)
+- [x] **Kontaktformular entfernt** (09.11.): Contact-Seite öffnet per Klick/Antippen direkt eine
+      E-Mail (mailto). Formspree-Abschnitt aus der Datenschutzerklärung entfernt → kein AV-Vertrag nötig.
+      Isabelle löscht ihr Formspree-Konto selbst (Account → Delete account).
+- [ ] **Datenschutzerklärung prüfen lassen** und „Last updated" aktualisieren.
+      eRecht24-Fehler beachten: dort stand GitHub als verantwortliche Stelle.
+- [x] **RESET (kurzfilm)** bleibt ausgeblendet (Entscheidung Isabelle, 12.11.). Ist ausgeblendet (`hidden: true` in projects.ts, Zeile in work.astro auskommentiert).
+      Seine Dateien wurden am 09.11. gelöscht – zum Wiedereinblenden müssen Film/Bilder neu in
+      `public/projects/kurzfilm/` gelegt werden (Webfassungen, Namen wie in projects.ts).
+- [x] **LinkedIn-URL** in `src/data/site.ts` (`LINKEDIN`) eingetragen (10.11.) – gilt für Footer + Contact.
+      (Seit 09.11. LinkedIn statt Instagram in Footer + Contact.)
+- [x] **Ungenutzte Dateien + Seitenkopien gelöscht** (09.11., von Isabelle bestätigt): 120 Dateien
+      (≈ 959 MB, inkl. aller Originale) und about-1/-2, work-1/-2.astro. `public/` = 74 Dateien, 66 MB,
+      keine Datei über 50 MB. **Regel ab jetzt:** in `public/` nur Webfassungen ablegen, die die Seite
+      wirklich nutzt; Originale außerhalb des Projekts aufbewahren.
+- [ ] **Build testen:** `npm run build` (läuft im Cloud-Workspace fehlerfrei; lokal auf dem
+      Mac noch klären) + Deploy über GitHub Actions.
 
 ## Referenz
 

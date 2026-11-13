@@ -1,36 +1,46 @@
 ---
+// Grundgerüst jeder Seite. Titel und Beschreibung sind bewusst auf ALLEN Seiten gleich und englisch
+// (zentral in src/data/site.ts) – auch die Vorschau beim Teilen (Open Graph) kommt von hier.
 import '../styles/global.css';
+import { SITE_TITLE, SITE_DESCRIPTION, SITE_URL } from '../data/site';
 
-interface Props {
-  title?: string;
-  description?: string;
-}
-
-const {
-  title = 'Isabelle Reinhardt — Mediendesign Portfolio',
-  description = 'Portfolio von Isabelle Reinhardt — Grafik, Film, 3D und digitale Gestaltung.',
-} = Astro.props;
+const ogImage = new URL('/og-image.jpg', SITE_URL).href;
+const pageUrl = new URL(Astro.url.pathname, SITE_URL).href;
 ---
 
 <!doctype html>
-<html lang="de">
+<!-- lang="en": Die Seite ist standardmäßig englisch. Der EN/DE-Schalter (About + Projektseiten)
+     stellt es beim Umschalten automatisch auf "de" um. -->
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="generator" content={Astro.generator} />
-    <meta name="description" content={description} />
+    <title>{SITE_TITLE}</title>
+    <meta name="description" content={SITE_DESCRIPTION} />
+    <link rel="canonical" href={pageUrl} />
 
-    <!-- Schriften: Outfit (geometrisch, runde Punkte) + Space Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap"
-    />
+    <!-- Favicon = Monogramm (neongrün auf Schwarz). ?v=… zwingt Browser, ein altes, zwischen-
+         gespeichertes Favicon zu ersetzen – bei einem neuen Favicon die Zahl einfach erhöhen. -->
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=4" />
+    <link rel="icon" href="/favicon.ico?v=4" sizes="48x48" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=4" />
+    <meta name="theme-color" content="#000000" />
 
-    <title>{title}</title>
+    <!-- Vorschau beim Teilen (WhatsApp, iMessage, LinkedIn, Slack …) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE_TITLE} />
+    <meta property="og:title" content={SITE_TITLE} />
+    <meta property="og:description" content={SITE_DESCRIPTION} />
+    <meta property="og:url" content={pageUrl} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Isabelle Reinhardt – Portfolio" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Schriften selbst gehostet (kein Google Fonts) – @font-face in global.css.
+         Haupt-Schrift Outfit vorladen, damit sie sofort steht. -->
+    <link rel="preload" href="/fonts/outfit-variable.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <slot />

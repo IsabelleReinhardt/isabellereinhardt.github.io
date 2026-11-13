@@ -1,0 +1,30 @@
+---
+// Desktop-Header (ab md) für Work, About, Contact und die Projektseiten – EIN Baustein für alle.
+// Aussehen/Position steuert jede Seite selbst über ihr Klassen-Präfix (p), z. B. p="wp" →
+// .wp-header, .wp-scrim, .wp-home (Logo-Link), .wp-nav, .wp-work / .wp-about / .wp-contact.
+// Links und Beschriftungen kommen aus src/data/site.ts.
+import { NAV } from '../data/site';
+
+interface Props {
+  p: string;                         // Klassen-Präfix der Seite (wp, ab, pd, ct)
+  active?: string;                   // aktiver Menüpunkt ('Work' | 'About' | 'Contact')
+  id?: string;
+  scrim?: boolean;                   // dunkler/heller Verlauf hinter dem Header beim Scrollen
+  class?: string;                    // zusätzliche Klassen für <header>
+}
+const { p, active, id, scrim = false, class: cls } = Astro.props;
+---
+
+<header class:list={[`${p}-header`, cls]} id={id}>
+  {scrim && <div class={`${p}-scrim`}></div>}
+  <a class={`${p}-home`} href="/" aria-label="Home">
+    <span class="logo-mark" aria-hidden="true"></span>
+  </a>
+  {NAV.map((n) => (
+    <a
+      href={n.href}
+      class:list={[`${p}-nav`, `${p}-${n.key}`, active === n.label && 'is-active']}
+      aria-current={active === n.label ? 'page' : undefined}
+    >{n.label}</a>
+  ))}
+</header>

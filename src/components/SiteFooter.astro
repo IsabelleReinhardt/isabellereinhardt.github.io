@@ -1,0 +1,28 @@
+---
+// Footer (schiebt sich am Seitenende hoch) für Work, About und die Projektseiten – EIN Baustein.
+// Aussehen steuert jede Seite über ihr Klassen-Präfix (p): .wp-footer, .wp-footer-inner, …
+// E-Mail und LinkedIn kommen aus src/data/site.ts.
+import { EMAIL, LINKEDIN } from '../data/site';
+
+interface Props {
+  p: string;        // Klassen-Präfix der Seite (wp, ab, pd)
+  id?: string;
+}
+const { p, id } = Astro.props;
+---
+
+<footer class={`${p}-footer`} id={id}>
+  <div class={`${p}-footer-inner`}>
+    <div class={`${p}-footer-logo`}>
+      <img src="/logo/Logo-neon.png" alt="Isabelle Reinhardt" />
+    </div>
+    <div class={`${p}-footer-bar`}>
+      <a class={`${p}-footer-mail`} href={`mailto:${EMAIL}`}>{EMAIL}</a>
+      <a class={`${p}-footer-li`} href={LINKEDIN} target="_blank" rel="noopener">LinkedIn</a>
+      <span class={`${p}-footer-legal`}>
+        <a href="/impressum">Imprint</a>
+        <a href="/datenschutz">Privacy</a>
+      </span>
+    </div>
+  </div>
+</footer>

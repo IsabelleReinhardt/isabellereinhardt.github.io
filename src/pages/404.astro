@@ -1,0 +1,217 @@
+---
+// 404 – Seite nicht gefunden. GitHub Pages zeigt automatisch diese Seite (404.html), wenn eine
+// Adresse nicht existiert. Aufbau wie die Startseite: EIN Maskenraster (7×5, Linien = gap,
+// Zellen = Masken). Das Raster folgt dem Cursor: die Kachel unter der Maus wächst (wie beim
+// Bild-Hover auf der Startseite), ohne Maus steht das Raster still.
+// Die drei Ziffern liegen je in einer Rasterkachel (Zeile 3, Spalte 3 / 4 / 5) und werden von
+// ihrer Kachel angeschnitten. Sie stehen still, während die Linien wandern (Gegen-Verschiebung
+// wie bei PORTFOLIO), und neigen sich zusätzlich in Richtung des Cursors.
+// Satz: Zeile 4, Spalte 5 (rechtsbündig). „back to my work": Kachel unten links.
+// Mobil: einfaches 4-Spalten-Raster ohne Bewegung.
+import Layout from '../layouts/Layout.astro';
+import MobileHeader from '../components/MobileHeader.astro';
+import { NAV } from '../data/site';
+
+const ROWS = 5, COLS = 7;
+// dy = Versatz in Kachelhöhen: die 4en leicht nach oben, die 0 leicht nach unten
+const DIGITS = [{ ch: '4', c: 3, dy: -0.08 }, { ch: '0', c: 4, dy: 0.08 }, { ch: '4', c: 5, dy: -0.08 }];   // alle in Zeile 3
+const navCol = (k: number) => 5 + k;                                         // WORK 5 · ABOUT 6 · CONTACT 7
+// Satz immer in genau 4 Zeilen (feste Umbrüche) → ändert sich nicht, wenn die Kachel schmaler wird
+const TEXT_LINES = ['this page got', 'lost somewhere', 'between two', 'grid lines.'];
+
+// Mobil (4 Spalten, quadratische Kacheln): Ziffern Zeile 3, Spalte 1–3; Satz Zeile 4, Spalte 3–4;
+// Link Zeile 6, Spalte 1
+const M_ROWS = 8;
+---
+
+<Layout>
+  <div class="nfpage">
+    <h1 class="sr-only">404 – page not found</h1>
+
+    <!-- ===== DESKTOP: Maskenraster ===== -->
+    <div class="nf-grid" aria-hidden="false">
+      {Array.from({ length: ROWS }, (_, ri) => Array.from({ length: COLS }, (_, ci) => {
+        const r = ri + 1, c = ci + 1;
+        const digit = r === 3 ? DIGITS.find((d) => d.c === c) : undefined;
+        const nav = r === 1 && c >= 5 ? NAV[c - 5] : undefined;
+        return (
+          <div class="nf-cell">
+            {r === 1 && c === 1 && (
+              <a href="/" aria-label="Home" class="nf-fixed nf-home" data-r="1" data-c="1">
+                <span class="logo-mark" aria-hidden="true"></span>
+              </a>
+            )}
+            {nav && (
+              <a href={nav.href} class="nf-fixed nf-nav" data-r="1" data-c={navCol(c - 5)}>{nav.label}</a>
+            )}
+            {digit && (
+              <span class="nf-digit" data-c={c} style={`--dy:${digit.dy}`} aria-hidden="true">{digit.ch}</span>
+            )}
+            {r === 4 && c === 5 && (
+              <p class="nf-fixed nf-text" data-r="4" data-c="5">{TEXT_LINES.map((l) => <span>{l}</span>)}</p>
+            )}
+            {r === 5 && c === 1 && (
+              <a href="/work" class="nf-fixed nf-back" data-r="5" data-c="1">back to my work</a>
+            )}
+          </div>
+        );
+      }))}
+    </div>
+
+    <!-- ===== MOBILE ===== -->
+    <MobileHeader nav={NAV} />
+    <div class="nf-m">
+      {Array.from({ length: M_ROWS * 4 }, (_, k) => {
+        const r = Math.floor(k / 4) + 1, c = (k % 4) + 1;
+        const digit = r === 3 && c <= 3 ? DIGITS[c - 1] : undefined;
+        return (
+          <div class:list={['nf-m-cell', r === 4 && c === 3 && 'is-text', r === 6 && c === 1 && 'is-back']}>
+            {digit && <span class="nf-m-digit" style={`--dy:${digit.dy}`} aria-hidden="true">{digit.ch}</span>}
+            {r === 4 && c === 3 && <p class="nf-m-text">{TEXT_LINES.map((l) => <span>{l}</span>)}</p>}
+            {r === 6 && c === 1 && <a href="/work" class="nf-back">back to my work</a>}
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // Rasterlinien: folgen dem Cursor (siehe unten). Feste Elemente (Logo, Navi, Satz, Link) und die Ziffern werden gegen
+  // die Zellbewegung verschoben → sie bleiben stehen, nur ihre Masken (Kacheln) wandern.
+  const grid = document.querySelector<HTMLElement>('.nf-grid');
+  if (grid) {
+    const COLS = 7, ROWS = 5, VL = COLS - 1, HL = ROWS - 1, EASE = 0.1;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const colCur = new Array(VL + 1).fill(0), rowCur = new Array(HL + 1).fill(0);
+    const CL = (k: number) => (k >= 1 && k <= VL ? colCur[k] : 0);
+    const RL = (k: number) => (k >= 1 && k <= HL ? rowCur[k] : 0);
+    const fixed = [...grid.querySelectorAll<HTMLElement>('.nf-fixed')];
+    const digits = [...grid.querySelectorAll<HTMLElement>('.nf-digit')];
+
+    const baseC = `(100% - ${VL}px) / ${COLS}`, baseR = `(100% - ${HL}px) / ${ROWS}`;
+    const tpl = (count: number, lines: number, base: string, cur: number[]) => {
+      const out: string[] = []; let prev = 0;
+      for (let i = 1; i <= count; i++) {
+        const o = i <= lines ? cur[i] : 0, d = o - prev; prev = o;
+        out.push(Math.abs(d) < 0.01 ? `calc(${base})` : `calc(${base} ${d > 0 ? '+' : '-'} ${Math.abs(d).toFixed(2)}px)`);
+      }
+      return out.join(' ');
+    };
+
+    // Kachel unter dem Cursor wächst (wie Bild-Hover auf der Startseite): die zwei angrenzenden
+    // Linien je Achse rücken nach außen. Ohne Cursor auf der Seite pulsieren die Linien.
+    const GROW = 36;
+    const cells = [...grid.querySelectorAll<HTMLElement>('.nf-cell')];
+    // Das Raster folgt nur dem Cursor (kein automatisches Pulsieren): die Kachel unter der Maus ist
+    // größer und bleibt es, bis die Maus weiterzieht; verlässt sie die Seite, entspannt sich das Raster.
+    let hover: { c: number; r: number } | null = null;
+    grid.addEventListener('mousemove', (e) => {
+      const cell = (e.target as Element).closest('.nf-cell') as HTMLElement | null;
+      const k = cell ? cells.indexOf(cell) : -1;
+      if (k >= 0) hover = { c: (k % COLS) + 1, r: Math.floor(k / COLS) + 1 };
+    });
+    grid.addEventListener('mouseleave', () => { hover = null; });
+    const growOffsets = (n: number, lines: number, h: number) => {
+      const d = new Array(n + 1).fill(0);
+      d[h] += GROW;
+      const hasL = h > 1, hasR = h < n;
+      if (hasL && hasR) { d[h - 1] -= GROW / 2; d[h + 1] -= GROW / 2; }
+      else if (hasL) d[h - 1] -= GROW; else if (hasR) d[h + 1] -= GROW;
+      const o = new Array(lines + 1).fill(0); let acc = 0;
+      for (let i = 1; i <= lines; i++) { acc += d[i]; o[i] = acc; }
+      return o;
+    };
+
+    // Cursor-Neigung: Ziffern kippen und rücken leicht in Richtung Maus (weich nachgezogen)
+    let mx = 0, my = 0, tx = 0, ty = 0;
+    if (!reduce) window.addEventListener('mousemove', (e) => {
+      tx = (e.clientX / window.innerWidth - 0.5) * 2;
+      ty = (e.clientY / window.innerHeight - 0.5) * 2;
+    }, { passive: true });
+
+    function frame(now: number) {
+      const colT = hover && !reduce ? growOffsets(COLS, VL, hover.c) : null, rowT = hover && !reduce ? growOffsets(ROWS, HL, hover.r) : null;
+      for (let i = 1; i <= VL; i++) colCur[i] += ((colT ? colT[i] : 0) - colCur[i]) * EASE;
+      for (let j = 1; j <= HL; j++) rowCur[j] += ((rowT ? rowT[j] : 0) - rowCur[j]) * EASE;
+      grid!.style.gridTemplateColumns = tpl(COLS, VL, baseC, colCur);
+      grid!.style.gridTemplateRows = tpl(ROWS, HL, baseR, rowCur);
+      // feste Elemente: Gegen-Verschiebung = Verschiebung der Zellmitte
+      for (const el of fixed) {
+        const r = +el.dataset.r!, c = +el.dataset.c!;
+        el.style.transform = `translate(${(-(CL(c - 1) + CL(c)) / 2).toFixed(2)}px, ${(-(RL(r - 1) + RL(r)) / 2).toFixed(2)}px)`;
+      }
+      // Ziffern: an der linken/oberen Zellkante verankert → um deren Verschiebung zurück,
+      // dazu die Neigung zum Cursor (jede Ziffer etwas anders → Tiefe)
+      mx += (tx - mx) * 0.06; my += (ty - my) * 0.06;
+      digits.forEach((el, k) => {
+        const c = +el.dataset.c!, f = [1, 0.7, 1.2][k];
+        const dx = -CL(c - 1) + mx * 18 * f, dy = -RL(2) + my * 10 * f;
+        el.style.transform = `translate(-50%, -53%) translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) rotate(${(mx * 7 * f).toFixed(2)}deg) skewX(${(-mx * 4 * f).toFixed(2)}deg)`;
+      });
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+</script>
+
+<style is:global>
+  .nfpage { position: relative; background: var(--color-ink); color: var(--color-off); min-height: 100vh; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+  /* ----- Desktop: Maskenraster wie Startseite (Linien = 1px-gap auf Linienfarbe) ----- */
+  .nf-grid {
+    display: none; height: 100vh; overflow: hidden; gap: 1px; background: var(--color-line);
+    grid-template-columns: repeat(7, calc((100% - 6px) / 7));
+    grid-template-rows: repeat(5, calc((100% - 4px) / 5));
+  }
+  @media (min-width: 768px) { .nf-grid { display: grid; } }
+  .nf-cell { position: relative; overflow: hidden; background: var(--color-ink); }
+
+  .nf-fixed { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .nf-nav {
+    font-family: var(--font-display); font-weight: 500; font-size: 0.875rem;
+    text-transform: uppercase; letter-spacing: 0.2em; color: var(--color-off); transition: color .2s;
+  }
+  .nf-nav:hover { color: var(--color-neon); }
+
+  /* Ziffer: Mitte der (ruhenden) Kachel (+ Versatz --dy in Kachelhöhen), größer als die Kachel →
+     von ihr angeschnitten (wie die PORTFOLIO-Buchstaben auf der Startseite). Scharf, ohne Blur. */
+  .nf-digit {
+    position: absolute; left: calc((100vw - 6px) / 14);
+    top: calc((100vh - 4px) / 10 + var(--dy, 0) * (100vh - 4px) / 5);
+    font-family: var(--font-display); font-weight: 900; line-height: 1;
+    font-size: min(43.5vh, 29.5vw); color: var(--color-neon);   /* stark hereingezoomt → von den Kacheln angeschnitten */
+    will-change: transform;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Satz: Zeile 4, Spalte 5 – rechtsbündig, 3–4 Zeilen */
+  .nf-text {
+    margin: 0; padding: 0 1.5vw; flex-direction: column; align-items: flex-end; text-align: right;
+    font-family: var(--font-display); font-weight: 300; font-size: 1.05vw; line-height: 1.5;   /* wächst/schrumpft mit dem Fenster */
+  }
+  .nf-text span, .nf-m-text span { display: block; white-space: nowrap; }
+
+  /* „back to my work": Kachel unten links, neongrün, klein, unterstrichen */
+  .nf-back {
+    font-family: var(--font-display); font-weight: 500; font-size: 0.875rem; letter-spacing: 0.2em;
+    text-transform: lowercase; color: var(--color-neon);
+    text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px;
+    transition: opacity .2s;
+  }
+  .nf-back:hover { opacity: .65; }
+
+  /* ----- Mobil: 4 Spalten, quadratische Kacheln, ohne Bewegung ----- */
+  .nf-m { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--color-line); padding-top: 25vw; }
+  .nf-m-cell { position: relative; aspect-ratio: 1; overflow: hidden; background: var(--color-ink); display: flex; align-items: center; justify-content: center; }
+  .nf-m-digit {
+    font-family: var(--font-display); font-weight: 900; line-height: 1; font-size: 39vw;
+    color: var(--color-neon); transform: translateY(calc(var(--dy, 0) * 25vw));
+  }
+  .nf-m-cell.is-text { grid-column: 3 / 5; aspect-ratio: auto; justify-content: center; align-items: flex-end; flex-direction: column; }
+  .nf-m-cell.is-text + .nf-m-cell { display: none; }   /* die 4. Kachel steckt im Doppelfeld */
+  .nf-m-text { margin: 0; padding: 0 5vw; text-align: right; font-family: var(--font-display); font-weight: 300; font-size: var(--text-mobile); line-height: 1.5; }
+  .nf-m-cell.is-back .nf-back { font-size: 2.4vw; letter-spacing: 0.08em; }
+  @media (min-width: 768px) { .nf-m { display: none; } }
+</style>

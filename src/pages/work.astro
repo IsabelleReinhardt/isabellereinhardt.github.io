@@ -1,0 +1,900 @@
+---
+// WORK — natives Seiten-Scrollen (Grundzustand) + fester "Spalt" beim Öffnen.
+// Grundzustand: kompakte Kategorien untereinander (gestauchtes Raster, kleinere
+// Titel), senkrechte Rasterlinien sichtbar. Die Seite scrollt ganz normal
+// (nativ, Momentum, Scrollbar).
+// Hover auf die Überschrift-SCHRIFT öffnet die Kategorie: ihr Label wird groß
+// und darunter öffnet sich ein FESTER Spalt, in dem die Projekte scrollen und
+// sich über die Überschrift schieben. Beim Öffnen scrollt die Seite sanft,
+// sodass der Spalt mittig sitzt. Ist eine Kategorie offen, scrollt das Mausrad
+// den Spalt (von überall — auch rechts). Sonst scrollt die Seite normal.
+import Layout from '../layouts/Layout.astro';
+import MobileHeader from '../components/MobileHeader.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { NAV } from '../data/site';
+import { COVER_ALT as ALT } from '../data/projects';
+
+// Projekte je Kategorie: img = Titelbild, ar = Seitenverhältnis der Kachel, pos = Bildausschnitt
+// (object-position, optional), lines = Titel (Großbuchstaben), sub = Kurzbeschreibung (immer englisch),
+// alt = Bildbeschreibung für Screenreader.
+
+const categories = [
+  // Reihenfolge = Reihenfolge auf der Seite · Anzahl Projekte: GRAPHIC 1 · FILM 2 · MOTION 2 · 3D 1 · PHOTO 2
+  {
+    label: 'GRAPHIC', slug: 'graphic',
+    projects: [
+      { img: "/projects/branding zam'/BrandingCover.png", href: '/work/branding-zam', ar: 3016 / 1686,
+        lines: ['BAUBUERO ZAM’'], sub: 'corporate design', alt: ALT['branding-zam'] },
+    ],
+  },
+  {
+    label: 'FILM', slug: 'film',
+    projects: [
+      { img: '/projects/imagefilm/ImagefilmCoverQuerformat.jpg', href: '/work/imagefilm', ar: 16 / 9,
+        lines: ['BAUBUERO ZAM’'], sub: 'corporate documentary', alt: ALT['imagefilm'] },
+      // RESET vorerst ausgeblendet (wieder einblenden: Zeile einkommentieren + hidden in projects.ts entfernen)
+      // { img: '/projects/kurzfilm/Coverbild.jpg',  href: '/work/kurzfilm',  ar: 2702 / 1512,
+      //   lines: ['RESET'], sub: 'short film' },
+    ],
+  },
+  {
+    label: 'MOTION', slug: 'motion',
+    projects: [
+      { img: "/projects/orbit musikvideo/Coverbild.jpg", href: '/work/orbit', ar: 2720 / 1518,
+        lines: ['ORBIT'], sub: 'music video', alt: ALT['orbit'] },
+      { img: '/projects/logo animation/Coverbild.jpg', href: '/work/logo-animation', ar: 2400 / 1346,
+        lines: ['ARMED ANGELS'], sub: 'logo animation', alt: ALT['logo-animation'] },
+    ],
+  },
+  {
+    label: '3D', slug: '3d',
+    projects: [
+      { img: '/projects/3d character/0001.jpg', href: '/work/ayra', ar: 2400 / 1350,
+        lines: ['AYRA'], sub: '3d character', alt: ALT['ayra'] },
+    ],
+  },
+  {
+    label: 'PHOTO', slug: 'photo',
+    projects: [
+      // Querformat-Ausschnitt wie oben auf der Projektseite (Startbild der Galerie)
+      { img: '/projects/foto portraits/Coverbild-web.jpg', href: '/work/modern-elvis', ar: 16 / 9, pos: '50% 34.5%',
+        lines: ['MODERN ELVIS'], sub: 'portraits', alt: ALT['modern-elvis'] },
+      { img: '/projects/foto comeback/Coverbild-web.jpg', href: '/work/comeback', ar: 2400 / 1738,
+        lines: ['COMEBACK'], sub: 'fashion genre', alt: ALT['comeback'] },
+    ],
+  },
+];
+---
+
+<Layout>
+  <div class="workpage bg-ink text-off">
+
+    <!-- ===== Mobile-Header (fixiert, < md) ===== -->
+    <MobileHeader nav={NAV} active="Work" />
+
+    <!-- ===== Desktop-Header (fixiert, ab md) ===== -->
+    <SiteHeader p="wp" id="wpHeader" active="Work" scrim class="hidden grid-cols-7 md:grid" />
+
+    <!-- ===== Inhalt (native Seiten-Scroll) ===== -->
+    <main class="wp-main">
+      <div class="wp-intro"><span>selected projects</span></div>
+
+      {categories.map((c, i) => (
+        <section id={c.slug} style={`--i:${i}`} class:list={['wp-cat', c.projects.length && 'has-projects']}>
+          <div class="wp-cat-head">
+            <span class="wp-cat-label" data-cat={c.slug}>{c.label}</span>
+          </div>
+
+          {c.projects.length > 0 && (
+            <div class="wp-cat-scroll">
+              <div class="wp-cat-body">
+                <!-- durchsichtiger Abstandshalter: das Label scheint durch, bis man scrollt -->
+                <div class="wp-spacer" aria-hidden="true"></div>
+                <!-- Projekt-Band: [vorige Kategorie (Fortsetzung)] · Abstand · EIGENE Projekte · Abstand ·
+                     [nächste Kategorie (Fortsetzung)]. Die Fortsetzungen sind reine Kopien (inert, für
+                     Screenreader verborgen): so sieht man beim Weiterscrollen beide Kategorien gleichzeitig,
+                     und der Wechsel der Überschrift passiert ohne Sprung. -->
+                {[
+                  { kind: 'prev', list: i > 0 ? categories[i - 1].projects : [] },
+                  { kind: 'own',  list: c.projects },
+                  { kind: 'next', list: i < categories.length - 1 ? categories[i + 1].projects : [] },
+                ].filter((L) => L.list.length > 0).map((L) => (
+                  <Fragment>
+                    {L.kind === 'next' && <div class="wp-ghost-gap" aria-hidden="true"></div>}
+                    <div class:list={['wp-proj-layer', L.kind === 'own' ? 'wp-own' : `wp-ghost wp-ghost-${L.kind}`]}
+                         aria-hidden={L.kind === 'own' ? undefined : 'true'} inert={L.kind === 'own' ? undefined : true}>
+                      {L.list.map((p) => {
+                        const Tag = p.href ? 'a' : 'div';
+                        return (
+                          <div class="wp-proj">
+                            <Tag href={p.href} class="wp-proj-inner" style={`--ar:${p.ar}`}>
+                              <div class="wp-proj-media">
+                                <img src={p.img} alt={L.kind === 'own' ? p.alt : ''} loading="lazy" style={p.pos ? `object-position:${p.pos}` : undefined} />
+                              </div>
+                              <div class="wp-proj-meta">
+                                <div class="wp-proj-title">
+                                  {p.lines.map((l) => <span class="ln">{l}</span>)}
+                                  <span class="sub">{p.sub}</span>
+                                </div>
+                              </div>
+                            </Tag>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {L.kind === 'prev' && <div class="wp-ghost-gap" aria-hidden="true"></div>}
+                  </Fragment>
+                ))}
+                <div class="wp-end-spacer" aria-hidden="true"></div>
+              </div>
+            </div>
+          )}
+        </section>
+      ))}
+    </main>
+
+    <!-- Footer-Scrollzone: echte Seitenlänge am Ende, in die man nativ hineinscrollt
+         (treibt das Aufsteigen des Footers → flüssig, mit Momentum) -->
+    <div class="wp-footer-space" aria-hidden="true"></div>
+
+    <!-- Cursor-Label "open" (Desktop): erscheint rechts neben dem Cursor über einem Projektbild -->
+    <div class="wp-cursor" aria-hidden="true">open</div>
+
+    <!-- Footer: schiebt sich beim Weiterscrollen am Seitenende von unten hoch;
+         der restliche Seiteninhalt bekommt dabei einen Layer-Blur (Figma 16-626) -->
+    <SiteFooter p="wp" />
+  </div>
+</Layout>
+
+<script>
+  const mq = window.matchMedia('(min-width: 768px)');
+  const wp = document.querySelector('.workpage');
+  const header = document.getElementById('wpHeader');
+  const cats = Array.from(document.querySelectorAll('.wp-cat'));
+  const labels = cats.map((c) => c.querySelector('.wp-cat-label'));
+
+  const ROW = 170;      // volle Reihe (aktives Label) — muss zu --rowH passen
+  const COMPACT = 150;  // gestauchte Reihe — muss zu --compactH passen
+  const HEADER = 170;   // Header-Höhe + main padding-top
+  const INTRO = 170;    // Intro-Reihe
+
+  let active = -1;
+  // Rücksprung nach dem Schließen per Scrollen: Wo stand die Überschrift im Fenster, als die
+  // Kategorie geöffnet wurde? Nach dem Schließen wird die Seite so gescrollt, dass sie wieder
+  // genau dort steht → man landet an der Stelle, an der man die Kategorie geöffnet hat.
+  let returnIdx = -1, returnY = 0;
+  let closedLabel0 = null;   // Dokument-Position der 1. Überschrift im geschlossenen Zustand
+  let closedDocH = 0;        // Seitenhöhe im geschlossenen Zustand
+  let wheelLockUntil = 0;    // kurz nach dem Schließen Mausrad-Schwung schlucken (kein Weiterrutschen)
+  let panelH = 0;
+
+  const footer = document.querySelector('.wp-footer');
+  const mainEl = document.querySelector('.wp-main');
+  let footerP = 0;   // 0 = versteckt, 1 = ganz hochgeschoben
+  let footerStartCached = 0;
+  // Länge der Fußzone (Desktop 100vh; mobil länger → Footer steigt langsamer auf)
+  const footerSpaceEl = document.querySelector('.wp-footer-space');
+  const FZ = () => (footerSpaceEl ? footerSpaceEl.offsetHeight : 0) || window.innerHeight;   // Startpunkt der Footer-Zone, gecacht solange der Inhalt nicht verschoben ist
+  const FOOTER_DAMP = 0.35;    // Dämpfung des Footer-Reveals bei offener Kategorie (0.35 = sanft/verzögert)
+  const FOOTER_LOCK = 0.985;   // ab hier gilt der Footer als "komplett zu sehen":
+                               // Kategorie-Titel reagieren dann nicht mehr auf Hover
+
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
+  const computePanelH = () => clamp(Math.round(window.innerHeight * 0.42), 340, 520);
+
+  function setPanelH() { panelH = computePanelH(); wp.style.setProperty('--panelH', panelH + 'px'); }
+
+  // Desktop: Sticky-Punkt von .wp-main so setzen, dass die Inhalts-Unterkante an der Viewport-
+  // Unterkante einrastet (negativer top-Wert = Inhaltshöhe − Viewport). Mobile: kein Sticky.
+  function setStickyTop() {
+    if (!mainEl) return;
+    const v = mq.matches ? Math.min(0, window.innerHeight - mainEl.offsetHeight) + 'px' : '';
+    if (mainEl.style.top !== v) mainEl.style.top = v;   // nur bei Änderung schreiben (kein Reflow-Spam)
+  }
+
+  function scrollOf(i) { return cats[i] && cats[i].querySelector('.wp-cat-scroll'); }
+  function resetScroll(i) { const s = scrollOf(i); if (s) s.scrollTop = 0; }
+
+  // Sanft (nativ) so scrollen, dass die geöffnete Kategorie [Label + Spalt] mittig
+  // im sichtbaren Bereich unter dem Header sitzt. Positionen aus dem Layout-Modell
+  // (Reihen vor der aktiven sind kompakt) — stabil, unabhängig von der Animation.
+  function centerOpen(i) {
+    const H = window.innerHeight;
+    const offsetTop = HEADER + INTRO + i * COMPACT;   // Dokument-Position der Kategorie
+    const groupH = ROW + panelH;
+    const desiredTop = HEADER + Math.max(0, (H - HEADER - groupH) / 2);
+    let target = Math.max(0, Math.round(offsetTop - desiredTop));
+    // Beim Zentrieren NICHT in die Footer-Reveal-Zone (letzte Viewport-Höhe) scrollen —
+    // sonst taucht beim Öffnen der untersten Kategorie der Footer ungewollt (teils) auf.
+    // Den Footer erreicht man danach gezielt durchs Weiterscrollen (Scroll-Chaining in onWheel).
+    // Höhe analytisch (NICHT scrollHeight — das steckt beim Öffnen noch in der Höhen-Animation):
+    // Dokument = Header + Intro + (N-1) kompakte Reihen + offene Reihe (ROW+panelH)
+    //            + Luft unter der letzten Kategorie (padding-bottom) + Fußzone (H).
+    // (Ohne die Luft blieb die unterste Kategorie PHOTO zu tief stehen statt mittig.)
+    const padB = mainEl ? parseFloat(getComputedStyle(mainEl).paddingBottom) || 0 : 0;
+    const docH = HEADER + INTRO + (cats.length - 1) * COMPACT + ROW + panelH + padB + FZ();
+    const footerStart = Math.max(0, docH - H - FZ());
+    target = Math.min(target, footerStart);
+    window.scrollTo({ top: target, behavior: 'smooth' });
+  }
+
+  // keepAt = Bildschirm-Position (px), an der die Überschrift stehen soll (Weiterblättern per
+  // Mausrad): dann ohne Animation umschalten und die Seite so setzen, dass die neue Kategorie
+  // exakt dort steht, wo die alte stand. Sonst (Hover) wie gehabt sanft zentrieren.
+  function open(i, keepAt) {
+    if (i === active) return;
+    // Alles zu → Raster ist kompakt: Position der 1. Überschrift merken (Basis fürs Zurückspringen)
+    if (active < 0) {
+      closedLabel0 = labels[0].getBoundingClientRect().top + window.scrollY;
+      closedDocH = document.documentElement.scrollHeight;
+    }
+    returnIdx = i;
+    returnY = labels[i].getBoundingClientRect().top;   // wo der Nutzer die Überschrift gerade sieht
+    const instant = typeof keepAt === 'number';
+    if (instant) wp.classList.add('wp-instant');   // Höhen/Schrift ohne Übergang → kein Springen
+    if (active >= 0) { cats[active].classList.remove('is-open'); resetScroll(active); }
+    active = i;
+    cats[i].classList.add('is-open');
+    resetScroll(i);
+    wp.classList.add('has-open');
+    setPanelH();
+    if (instant) {
+      setStickyTop();
+      const docTop = labels[i].getBoundingClientRect().top + window.scrollY;   // Layout ist sofort fertig
+      const fs = Math.max(0, document.documentElement.scrollHeight - window.innerHeight - FZ());
+      window.scrollTo({ top: Math.max(0, Math.min(fs, Math.round(docTop - keepAt))), behavior: 'instant' });
+      requestAnimationFrame(() => requestAnimationFrame(() => wp.classList.remove('wp-instant')));
+    } else {
+      // Hover: Projekte stehen direkt unter der Überschrift (Spalt = 1 Abstandshalter weit gescrollt)
+      const s = scrollOf(i); if (s) s.scrollTop = Math.max(0, posIn(i, ownLayer(i)) - ROW);
+      centerOpen(i);
+    }
+    // Nach Zentrier-Scroll UND Aufklapp-Animation Sticky-Punkt + Footer neu setzen. Der
+    // Zentrier-Scroll landet während der Höhen-Animation gelegentlich etwas zu tief → hier
+    // zurück auf den Footer-Start klemmen, damit der Footer vollständig unten bleibt.
+    setTimeout(() => {
+      if (active !== i) return;
+      setStickyTop();
+      const fs = Math.max(0, document.documentElement.scrollHeight - window.innerHeight - FZ());
+      if (window.scrollY > fs) window.scrollTo(0, fs);
+      onScroll();
+    }, 520);
+  }
+
+  // Schließen per Scrollen: zu und sanft zurück an die Stelle, an der geöffnet wurde.
+  // Im kompakten Zustand liegen die Überschriften im festen Abstand COMPACT untereinander.
+  function closeAndReturn() {
+    const i = returnIdx;
+    closeAll();
+    if (i < 0 || closedLabel0 == null) return;
+    const maxY = Math.max(0, closedDocH - window.innerHeight - FZ());   // nicht in die Footer-Zone
+    const target = Math.max(0, Math.min(maxY, Math.round(closedLabel0 + i * COMPACT - returnY)));
+    wheelLockUntil = performance.now() + 700;
+    smoothScrollTo(target, 550);
+  }
+
+  // Direkt nach dem Schließen: restlichen Scroll-Schwung (Trackpad-Momentum) schlucken – egal über
+  // welchem Element die Maus gerade ist –, sonst rutscht die Seite am Rücksprung-Punkt vorbei.
+  window.addEventListener('wheel', (e) => {
+    if (performance.now() < wheelLockUntil) { e.preventDefault(); e.stopPropagation(); }
+  }, { passive: false, capture: true });
+
+  // ----- Weiterblättern zwischen den Kategorien (Mausrad) = ein durchgehender Scrollfluss -----
+  // Jedes Band enthält unter den eigenen Projekten die Projekte der NÄCHSTEN Kategorie und darüber die
+  // der VORIGEN (als Kopie, „Fortsetzung"). Man scrollt also durchgehend weiter und sieht beim Übergang
+  // beide Kategorien gleichzeitig. Überquert der Abstand zwischen den beiden die Mitte des Spalts,
+  // öffnet die Nachbar-Kategorie an GENAU derselben Stelle, und ihre echten Projekte stehen exakt dort,
+  // wo die Kopie stand → kein Sprung, nur die Überschrift wechselt.
+  // Position eines Elements im Band (px ab Band-Anfang, unabhängig vom aktuellen Scrollstand)
+  function posIn(i, el) {
+    const sc = scrollOf(i);
+    if (!sc || !el) return 0;
+    return el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop;
+  }
+  const ownLayer = (i) => cats[i] && cats[i].querySelector('.wp-own');
+  const ghost = (i, kind) => cats[i] && cats[i].querySelector('.wp-ghost-' + kind);
+  // Mitte des Abstands zwischen eigenen Projekten und der Fortsetzung (relativ zur Spalt-Oberkante)
+  function gapMid(i, kind) {
+    const own = ownLayer(i), g = ghost(i, kind), sc = scrollOf(i);
+    if (!own || !g || !sc) return null;
+    const a = kind === 'next' ? posIn(i, own) + own.offsetHeight : posIn(i, g) + g.offsetHeight;
+    const b = kind === 'next' ? posIn(i, g) : posIn(i, own);
+    return (a + b) / 2 - sc.scrollTop;
+  }
+  // Wechsel zur Nachbar-Kategorie: die neue Kategorie übernimmt EXAKT die Lage der Fortsetzung →
+  // alle sichtbaren Projekte stehen danach an derselben Stelle, nur die Überschrift wechselt.
+  function switchTo(i, kind) {
+    const from = active, sOld = scrollOf(from);
+    const g = ghost(from, kind);
+    const yGhost = g ? g.getBoundingClientRect().top : 0;   // Lage der Fortsetzung auf dem Bildschirm
+    const keepAt = labels[from].getBoundingClientRect().top;
+    open(i, keepAt);
+    const s = scrollOf(i), own = ownLayer(i);
+    if (!s || !own || !sOld) return;
+    // Scrollstand so, dass die echten Projekte genau dort stehen, wo eben die Fortsetzung stand
+    s.scrollTop += own.getBoundingClientRect().top - yGhost;
+  }
+  // Alle schließen, die aktuelle Überschrift bleibt dabei an ihrer Stelle auf dem Bildschirm.
+  function closeKeepingPlace() {
+    if (active < 0) return;
+    returnIdx = active;
+    returnY = labels[active].getBoundingClientRect().top;
+    closeAndReturn();
+  }
+
+  function closeAll() {
+    if (active >= 0) { cats[active].classList.remove('is-open'); resetScroll(active); }
+    active = -1;
+    wp.classList.remove('has-open');
+  }
+
+  // Nur über der Überschrift-SCHRIFT öffnen.
+  function labelAt(x, y) {
+    for (let i = 0; i < labels.length; i++) {
+      const r = labels[i].getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return i;
+    }
+    return -1;
+  }
+
+  let ticking = false;
+  // Hover-Absicht: eine Kategorie öffnet erst, wenn die Maus KURZ auf der Überschrift verweilt.
+  // So rutschen beim Herunterfahren nicht alle Kategorien durch, bevor man die gewünschte erreicht.
+  let hoverTimer = null, pendingIdx = -1;
+  const HOVER_DELAY = 220;   // ms
+  function cancelHover() { if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; } pendingIdx = -1; }
+  function onMove(e) {
+    if (!mq.matches) return;
+    // Footer komplett zu sehen → Titel reagieren nicht mehr auf Hover
+    // (verhindert u. a. das ruckartige centerOpen-Scrollen im Footer-Zustand).
+    if (footerP >= FOOTER_LOCK) { cancelHover(); if (active >= 0) closeAll(); return; }
+    const x = e.clientX, y = e.clientY;
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      if (y < HEADER) { cancelHover(); closeAll(); return; }
+      // Ist eine Kategorie offen, schließt die Maus in der GANZ RECHTEN Rasterspalte
+      // (7. von 7 Spalten) die Kategorie — einfacher Weg zum Schließen per Hover.
+      if (active >= 0 && x >= window.innerWidth * 6 / 7) { cancelHover(); closeAll(); return; }
+      const i = labelAt(x, y);
+      if (i < 0) { cancelHover(); return; }        // nicht über einer Überschrift
+      if (i === active) { cancelHover(); return; } // schon offen
+      if (i !== pendingIdx) {                       // neues Ziel → Verzögerung (neu) starten
+        cancelHover();
+        pendingIdx = i;
+        hoverTimer = setTimeout(() => { hoverTimer = null; pendingIdx = -1; open(i); }, HOVER_DELAY);
+      }
+    });
+  }
+
+  // Footer steigt beim NATIVEN Scrollen in die Fußzone am Seitenende auf
+  // (kein Wheel-Hijack → volle Scroll-Flüssigkeit, Momentum, Scrollbar).
+  // Startpunkt der Footer-Zone nur messen, solange .wp-main nicht verschoben ist (robust gegen
+  // eine durch die Verschiebung ggf. aufgeblähte scrollHeight → Startpunkt bleibt stabil).
+  function refreshFooterStart() {
+    if (!mainEl || !mainEl.style.transform) {
+      footerStartCached = Math.max(0, document.documentElement.scrollHeight - window.innerHeight - FZ());
+    }
+  }
+  function applyFooter() {
+    if (!footer) return;
+    footer.style.transform = 'translateY(' + ((1 - footerP) * 100).toFixed(2) + '%)';
+    footer.classList.toggle('is-active', footerP > 0.5);
+    // Inhalt pixelgenau gegen den Scroll in die Fußzone halten: um EXAKT die (ganzzahlige)
+    // Strecke ab dem gecachten Startpunkt verschieben → Inhalt bleibt stehen (kein Sub-Pixel-/
+    // Inflations-Nachrutschen). translate3d = GPU.
+    if (mainEl) {
+      if (mq.matches) {
+        mainEl.style.transform = '';   // Desktop: Inhalt wird per position:sticky festgehalten (kein Transform)
+      } else if (footerP > 0) {
+        const held = Math.max(0, Math.round(window.scrollY - footerStartCached));
+        mainEl.style.transform = 'translate3d(0,' + held + 'px,0)';
+      } else {
+        mainEl.style.transform = '';
+      }
+    }
+  }
+  // Fortschritt = wie weit der Scroll in die letzte Viewport-Höhe (die Fußzone) läuft.
+  function footerProgress() {
+    refreshFooterStart();
+    return clamp((window.scrollY - footerStartCached) / FZ(), 0, 1);
+  }
+
+  // Ist eine Kategorie offen, scrollt das Mausrad IHREN Spalt (von überall).
+  // Sind alle geschlossen, wird der Footer-Reveal ebenfalls gedämpft hochgefahren.
+  function onWheel(e) {
+    if (!mq.matches) return;
+    const d = e.deltaMode === 1 ? e.deltaY * 16 : (e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY);
+    if (active >= 0) {
+      const s = scrollOf(active);
+      if (!s) return;
+      e.preventDefault();
+      const want = s.scrollTop + d;
+      const max = s.scrollHeight - s.clientHeight;
+      s.scrollTop = Math.max(0, Math.min(max, want));
+      const half = s.clientHeight / 2;
+      // Runter: Abstand zur nächsten Kategorie hat die Mitte des Spalts überquert → Wechsel (fließend)
+      const gn = gapMid(active, 'next');
+      if (d > 0 && gn !== null && gn < half) { switchTo(active + 1, 'next'); return; }
+      // Hoch: Abstand zur vorigen Kategorie hat die Mitte überquert → Wechsel
+      const gp = gapMid(active, 'prev');
+      if (d < 0 && gp !== null && gp > half) { switchTo(active - 1, 'prev'); return; }
+      // Ganz unten / ganz oben (keine Fortsetzung mehr): alles raus → Kategorien schließen
+      if (want > max && active === cats.length - 1) { closeKeepingPlace(); return; }
+      if (want < 0 && active === 0) { closeKeepingPlace(); return; }
+      return;
+    }
+
+    // Alle Kategorien geschlossen: den Footer-Reveal ebenso gedämpft hochfahren (gleiches Gefühl
+    // wie bei offener Kategorie). NUR abwärts in der Footer-Zone eingreifen; davor und beim
+    // Zurückscrollen bleibt der Scroll nativ (volles Momentum, flüssig).
+    if (d > 0 && window.scrollY >= footerStartCached - 1) {   // ab Footer-Start gedämpft
+      window.scrollBy(0, d * FOOTER_DAMP);
+      e.preventDefault();
+    }
+  }
+
+  function onScroll() {
+    header && header.classList.toggle('is-scrolled', window.scrollY > 4);
+    setStickyTop();   // Sticky-Punkt aktuell halten (schreibt nur bei Höhenänderung)
+    footerP = footerProgress(); applyFooter();
+  }
+  function resetFooter() { footerP = 0; applyFooter(); }
+
+  // Cursor-Label "open" über Projektbildern (nur Desktop)
+  const cursorEl = document.querySelector('.wp-cursor');
+  const projMedias = Array.from(document.querySelectorAll('.wp-proj-media'));
+  let curMedia = null;                 // aktuell überfahrenes Bild
+  let sampleCache = new WeakMap();
+
+  // Bild einmal verkleinert in ein Canvas zeichnen (object-fit: cover nachbilden),
+  // damit wir die Helligkeit unter dem Cursor auslesen können.
+  function sampler(media) {
+    const img = media.querySelector('img');
+    if (!img || !img.complete || !img.naturalWidth) return null;   // Bild noch nicht geladen → kein Sampling
+    let s = sampleCache.get(media);
+    if (s) return s;
+    const box = media.getBoundingClientRect();
+    if (!box.width || !box.height) return null;
+    const CW = 64, CH = Math.max(1, Math.round(CW * box.height / box.width));
+    const cv = document.createElement('canvas'); cv.width = CW; cv.height = CH;
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    const ir = img.naturalWidth / img.naturalHeight, br = box.width / box.height;
+    let sw, sh, sx, sy;                // cover: den überstehenden Teil beschneiden
+    if (ir > br) { sh = img.naturalHeight; sw = sh * br; sx = (img.naturalWidth - sw) / 2; sy = 0; }
+    else         { sw = img.naturalWidth;  sh = sw / br; sx = 0; sy = (img.naturalHeight - sh) / 2; }
+    try { ctx.drawImage(img, sx, sy, sw, sh, 0, 0, CW, CH); }
+    catch (err) { return null; }       // z. B. CORS → kein Sampling
+    s = { ctx, CW, CH };
+    sampleCache.set(media, s);
+    return s;
+  }
+  // mittlere Helligkeit (0–255) einer kleinen Fläche unter dem Punkt
+  function brightnessAt(media, clientX, clientY) {
+    const s = sampler(media); if (!s) return null;
+    const box = media.getBoundingClientRect();
+    const rx = clamp((clientX - box.left) / box.width, 0, 1);
+    const ry = clamp((clientY - box.top) / box.height, 0, 1);
+    const px = clamp(Math.round(rx * s.CW), 0, s.CW - 1);
+    const py = clamp(Math.round(ry * s.CH), 0, s.CH - 1);
+    const x0 = clamp(px - 2, 0, s.CW - 1), y0 = clamp(py - 2, 0, s.CH - 1);
+    const w = clamp(px + 2, 0, s.CW - 1) - x0 + 1, h = clamp(py + 2, 0, s.CH - 1) - y0 + 1;
+    let d; try { d = s.ctx.getImageData(x0, y0, w, h).data; } catch (err) { return null; }
+    let sum = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4) { sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]; n++; }
+    return n ? sum / n : null;
+  }
+
+  function onCursorMove(e) {
+    if (!cursorEl) return;
+    cursorEl.style.transform = `translate(${e.clientX + 18}px, ${e.clientY}px) translateY(-50%)`;
+    if (!curMedia || !cursorEl.classList.contains('is-visible')) return;
+    // dort messen, wo der Schriftzug sitzt (rechts vom Cursor)
+    const L = brightnessAt(curMedia, e.clientX + 26, e.clientY);
+    if (L != null) cursorEl.classList.toggle('is-dark', L > 150);
+  }
+  const projEnter = (e) => { curMedia = e.currentTarget; cursorEl && cursorEl.classList.add('is-visible'); };
+  const projLeave = () => { curMedia = null; cursorEl && cursorEl.classList.remove('is-visible', 'is-dark'); };
+
+  function enable() {
+    setPanelH();
+    wp.addEventListener('mousemove', onMove);
+    wp.addEventListener('wheel', onWheel, { passive: false });
+    document.addEventListener('scroll', onScroll, { passive: true });
+    header && header.addEventListener('mouseenter', closeAll);
+    document.addEventListener('mousemove', onCursorMove);
+    projMedias.forEach((m) => { m.addEventListener('mouseenter', projEnter); m.addEventListener('mouseleave', projLeave); });
+    onScroll();
+  }
+  function disable() {
+    wp.removeEventListener('mousemove', onMove);
+    wp.removeEventListener('wheel', onWheel);
+    document.removeEventListener('scroll', onScroll);
+    header && header.removeEventListener('mouseenter', closeAll);
+    document.removeEventListener('mousemove', onCursorMove);
+    projMedias.forEach((m) => { m.removeEventListener('mouseenter', projEnter); m.removeEventListener('mouseleave', projLeave); });
+    cursorEl && cursorEl.classList.remove('is-visible');
+    closeAll();
+    resetFooter();
+  }
+
+  // ===== Mobile: Tap-Akkordeon + Vergrößern beim Scrollen =====
+  function mgallery(i) { return cats[i] && cats[i].querySelector('.wp-cat-scroll'); }
+
+  // Eigener sanfter Scroll: läuft ~500ms und trifft das Ziel auch dann, wenn die
+  // Galerie-Höhe sich noch aufklappt (nativer smooth-scroll würde zu früh clampen).
+  let scrollRAF = 0;
+  function smoothScrollTo(target, dur) {
+    cancelAnimationFrame(scrollRAF);
+    const startY = window.scrollY, t0 = performance.now();
+    const ease = (t) => 1 - Math.pow(1 - t, 3);
+    function step(now) {
+      const t = Math.min(1, (now - t0) / dur);
+      window.scrollTo(0, startY + (target - startY) * ease(t));
+      if (t < 1) scrollRAF = requestAnimationFrame(step);
+    }
+    scrollRAF = requestAnimationFrame(step);
+  }
+
+  function mobileToggle(i) {
+    const prev = active;
+    if (i === prev) {   // gleiche Kategorie erneut getippt → zuklappen
+      cats[prev].classList.remove('is-open');
+      const g0 = mgallery(prev); if (g0) g0.style.height = '0px';
+      active = -1; wp.classList.remove('has-open');
+      requestAnimationFrame(scaleLabels);
+      return;
+    }
+    // Ziel-Scrollposition bestimmen, sodass die getippte Headline direkt unter den
+    // Header rutscht — analytisch aus der aktuellen (noch nicht animierten) Lage,
+    // damit die Messung unabhängig von der Höhen-Animation korrekt ist.
+    labels.forEach((l) => { l.style.transform = ''; });   // ohne Scroll-Skalierung messen
+    const headerH = window.innerWidth * 0.25;             // Mobile-Header = 25vw
+    // Oberkante der KATEGORIE-ZEILE (nicht des Labels, das mittig darin sitzt) unter den Header
+    const curTop = cats[i].querySelector('.wp-cat-head').getBoundingClientRect().top;
+    const prevG = prev >= 0 ? mgallery(prev) : null;
+    const prevGH = prevG ? prevG.getBoundingClientRect().height : 0;
+    const aboveShift = (prev >= 0 && prev < i) ? prevGH : 0; // schließt eine Kategorie darüber → alles rutscht hoch
+    const gi = mgallery(i);
+    const newGH = gi ? gi.scrollHeight : 0;
+    const newScrollH = document.documentElement.scrollHeight - prevGH + newGH;
+    const maxS = Math.max(0, newScrollH - window.innerHeight);
+    const target = Math.max(0, Math.min(window.scrollY + curTop - aboveShift - headerH, maxS));
+
+    // umschalten
+    if (prev >= 0) { cats[prev].classList.remove('is-open'); if (prevG) prevG.style.height = '0px'; }
+    active = i;
+    cats[i].classList.add('is-open');
+    if (gi) gi.style.height = newGH + 'px';
+    wp.classList.add('has-open');
+    scaleLabels();
+    smoothScrollTo(target, 520);
+  }
+
+  // Das Kategoriewort in der Reihe direkt unter dem Header wird am größten.
+  // NUR wenn keine Kategorie offen ist — sonst alle auf Normalgröße zurück.
+  function scaleLabels() {
+    if (active >= 0) { for (const l of labels) l.style.transform = ''; return; }
+    const vw = window.innerWidth / 100;
+    const row = 25 * vw, head = 25 * vw;   // MobileHeader + Reihe = je 25vw
+    const peak = head + row / 2;
+    for (const l of labels) {
+      const r = l.getBoundingClientRect();
+      const c = r.top + r.height / 2;
+      const t = Math.max(0, 1 - Math.abs(c - peak) / row);
+      l.style.transform = 'scale(' + (1 + 0.28 * t).toFixed(3) + ')';
+    }
+  }
+
+  let mticking = false;
+  function onScrollM() {
+    if (mticking) return; mticking = true;
+    requestAnimationFrame(() => {
+      mticking = false;
+      footerP = footerProgress(); applyFooter();   // Footer-Reveal wie Desktop (gleiche Funktionsweise)
+      if (footerP <= 0.01) scaleLabels();           // Titel-Skalierung nur, solange der Footer unten ist
+    });
+  }
+
+  const clickHandlers = [];
+  function enableMobile() {
+    labels.forEach((l, i) => { const h = () => mobileToggle(i); clickHandlers[i] = h; l.addEventListener('click', h); });
+    document.addEventListener('scroll', onScrollM, { passive: true });
+    scaleLabels();
+    footerP = footerProgress(); applyFooter();   // Ausgangszustand des Footers setzen
+  }
+  function disableMobile() {
+    labels.forEach((l, i) => { if (clickHandlers[i]) l.removeEventListener('click', clickHandlers[i]); l.style.transform = ''; });
+    document.removeEventListener('scroll', onScrollM);
+    if (active >= 0) { cats[active].classList.remove('is-open'); const g = mgallery(active); if (g) g.style.height = '0px'; }
+    active = -1; wp.classList.remove('has-open');
+    resetFooter();
+  }
+
+  function applyMode() {
+    disable(); disableMobile();
+    if (mq.matches) enable(); else enableMobile();
+  }
+  applyMode();
+  mq.addEventListener && mq.addEventListener('change', applyMode);
+  window.addEventListener('resize', () => {
+    sampleCache = new WeakMap();   // Bildgrößen ändern sich → Helligkeits-Cache verwerfen
+    if (mq.matches) { setPanelH(); setStickyTop(); if (active >= 0) centerOpen(active); }
+    else { if (active >= 0) { const g = mgallery(active); if (g) g.style.height = g.scrollHeight + 'px'; } scaleLabels(); }
+  });
+</script>
+
+<style is:global>
+  /* Kein Scroll-Anchoring: der Browser würde sonst beim Kategoriewechsel die Seite „nachkorrigieren“
+     und die Überschrift verrutschen (wir setzen die Position selbst) */
+  html:has(.workpage), .workpage { overflow-anchor: none; }
+  .workpage {
+    --rowH: 170px;
+    --compactH: 150px;
+    --m: 67px;
+    --hlw: 3px;
+    --capH: 88px;
+    --ppad: 18px;
+    --fitH: 340px;
+    position: relative; min-height: 100vh;
+    background-color: var(--color-ink);
+    background-image: linear-gradient(to right, var(--color-line) 1px, transparent 1px);
+    background-size: calc(100% / 7) 100%;
+    background-position: -1px 0;
+  }
+
+  /* ---------- Desktop-Header ---------- */
+  .wp-header { position: fixed; inset-inline: 0; top: 0; z-index: 50; height: var(--rowH); }
+  .wp-scrim {
+    position: absolute; left: 0; top: 0; width: 100%; z-index: 0; height: calc(var(--rowH) * 2.3);
+    /* weicher, lang auslaufender Verlauf — identisch zur About-Seite (keine harte Kante über hellen Bildern) */
+    background: linear-gradient(to bottom, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.93) 18%, rgba(0,0,0,0.82) 34%, rgba(0,0,0,0.63) 50%, rgba(0,0,0,0.4) 65%, rgba(0,0,0,0.19) 80%, rgba(0,0,0,0.06) 91%, rgba(0,0,0,0) 100%);
+    opacity: 0; transition: opacity .3s ease; pointer-events: none;
+  }
+  .wp-header.is-scrolled .wp-scrim { opacity: 1; }
+  .wp-home { grid-column: 1; display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
+  /* Ganze Rasterkachel ist klickbar und löst den Hover aus (Link füllt die volle Zeilenhöhe) */
+  .wp-home, .wp-nav { align-self: stretch; }
+  .wp-work { grid-column: 5; } .wp-about { grid-column: 6; } .wp-contact { grid-column: 7; }
+  .wp-nav {
+    display: flex; align-items: center; justify-content: center; position: relative; z-index: 1;
+    font-family: var(--font-display); font-weight: 500; font-size: 0.875rem;
+    text-transform: uppercase; letter-spacing: 0.2em; color: var(--color-off); transition: color .2s, opacity .2s;
+  }
+  .wp-nav.is-active { opacity: 0.5; }
+  .wp-nav:hover { color: var(--color-neon); }
+
+  /* Cursor-Label "open" — folgt dem Cursor, sichtbar über einem Projektbild */
+  .wp-cursor {
+    position: fixed; top: 0; left: 0; z-index: 100;
+    font-family: var(--font-display); font-weight: 500; font-size: 14px;
+    letter-spacing: 0.2em; text-transform: lowercase; color: var(--color-neon);
+    pointer-events: none; white-space: nowrap;
+    opacity: 0; transition: opacity .15s ease, color .12s ease;
+    transform: translate(-200px, -200px);
+  }
+  .wp-cursor.is-visible { opacity: 1; }
+  /* Auf zu heller Bildfläche (zu wenig Kontrast für Neon) wird "open" schwarz */
+  .wp-cursor.is-dark { color: var(--color-ink); }
+
+  /* ---------- Footer (schiebt sich von unten hoch) ---------- */
+  /* Kein filter:blur mehr auf .wp-main — das zeichnete den gesamten Inhaltslayer pro Scroll-Frame
+     neu und ruckelte. Die Unschärfe macht jetzt der backdrop-filter des Footers (GPU, viewportgroß). */
+
+  .wp-footer {
+    position: fixed; inset: 0; z-index: 40;
+    transform: translateY(100%);   /* wird per nativem Scroll gesetzt → kein transition (1:1, flüssig) */
+    will-change: transform;
+    pointer-events: none;
+    /* obere Kante läuft auf 0% Deckkraft aus → keine sichtbare Kante */
+    background: linear-gradient(to top,
+      rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.72) 55%,
+      rgba(0,0,0,0.4) 78%, rgba(0,0,0,0) 100%);
+    /* Frosted-Glass: unscharfer, „festgehaltener" Inhalt hinter dem Footer; oben ausgeblendet. */
+    -webkit-backdrop-filter: blur(7px);
+            backdrop-filter: blur(7px);
+    -webkit-mask-image: linear-gradient(to top, #000 0%, #000 78%, transparent 100%);
+            mask-image: linear-gradient(to top, #000 0%, #000 78%, transparent 100%);
+  }
+  .wp-footer.is-active { pointer-events: auto; }
+  /* Wrapper ist auf Desktop „unsichtbar" fürs Layout → Logo/Bar bleiben wie gehabt
+     absolut in .wp-footer. Mobil wird er zum verankerten Fluss-Block (siehe @media). */
+  .wp-footer-inner { display: contents; }
+
+  /* unsichtbare Scrollzone am Seitenende, in die der native Scroll hineinläuft */
+  .wp-footer-space { height: 100vh; }
+  @media (max-width: 767px) { .wp-footer-space { height: 200vh; } }   /* mobil: Footer steigt halb so schnell auf */
+
+  .wp-footer-logo {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    padding-top: var(--rowH);
+  }
+  .wp-footer-logo img { width: 15vw; max-width: 210px; height: auto; }
+
+  .wp-footer-bar {
+    position: absolute; left: 0; right: 0; bottom: 0; height: var(--rowH);
+    display: grid; grid-template-columns: repeat(7, 1fr); align-items: center;
+    padding: 0;
+    font-family: var(--font-display); font-weight: 500; font-size: 0.875rem;
+    text-transform: uppercase; letter-spacing: 0.2em; color: var(--color-off);
+  }
+  .wp-footer-bar a { color: var(--color-off); text-decoration: none; transition: color .2s; }
+  .wp-footer-bar a:hover { color: var(--color-neon); }
+  /* feste Grid-Spalten → Desktop-Anordnung unabhängig von der DOM-Reihenfolge */
+  .wp-footer-li { grid-column: 1; grid-row: 1; justify-self: center; }
+  .wp-footer-mail { grid-column: 4; grid-row: 1; justify-self: center; text-transform: none; letter-spacing: 0.1em; font-weight: 300; }
+  .wp-footer-legal { display: contents; }
+  .wp-footer-legal a:nth-of-type(1) { grid-column: 6; grid-row: 1; justify-self: center; }  /* Imprint – wie Landingpage */
+  .wp-footer-legal a:nth-of-type(2) { grid-column: 7; grid-row: 1; justify-self: center; }  /* Privacy – wie Landingpage */
+
+  /* ---------- Inhalt ---------- */
+  /* Beim Scrollen in die Fußzone wird die letzte Ansicht per JS „festgehalten"
+     (translateY gegen den Scroll), sodass der Footer sichtbar ÜBER den
+     (blurrenden) Inhalt nach oben fährt – statt über leere schwarze Fläche.
+     Voll nativer Scroll, aber präzise. */
+  /* Desktop: .wp-main klebt am Seitenende fest (position:sticky). Erreicht man die Footer-Zone,
+     rastet die UNTERKANTE des Inhalts an der Viewport-Unterkante ein (Sticky-Punkt per JS gesetzt)
+     und bleibt dort stehen, während der Footer darüber aufsteigt. Kompositorbasiert → KEIN Lag/
+     Mitwandern wie beim früheren Scroll-Gegen-Transform. */
+  .wp-main { padding-top: var(--rowH); padding-bottom: calc(var(--rowH) * 2); position: sticky; top: 0; will-change: transform; }   /* 2 Grid-Zeilen Luft unter der letzten Kategorie */
+
+  .wp-intro {
+    height: var(--rowH); display: flex; align-items: flex-end;
+    padding-left: var(--m); padding-bottom: 1.4rem; border-top: 1px solid var(--color-line);
+  }
+  .wp-intro span {
+    font-family: var(--font-display); font-weight: 500; font-size: 1rem;
+    letter-spacing: 0.2em; color: var(--color-off); text-transform: lowercase;
+  }
+
+  /* ---------- Kategorie: Label + fester Spalt (Scroll-Ebene über dem Label) ---------- */
+  /* Schließen = Übergang zur Grund-Regel → langsamer & weich (Swoosh). Öffnen behält das
+     flottere Timing (Transition der is-open-Regel). */
+  .wp-cat {
+    position: relative; height: var(--compactH);
+    border-top: var(--hlw) solid var(--color-line);
+    transition: height .6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .wp-cat.is-open { height: calc(var(--rowH) + var(--panelH, 400px)); transition: height .4s ease; }
+  /* Letzte Kategorie unten ebenfalls von einer horizontalen Rasterlinie abgeschlossen */
+  .wp-cat:last-of-type { border-bottom: var(--hlw) solid var(--color-line); }
+
+  .wp-cat-head {
+    position: absolute; top: 0; left: 0; right: 0; height: var(--compactH);
+    display: flex; align-items: center; padding-left: var(--m); z-index: 1;
+    transition: height .6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .wp-cat.is-open .wp-cat-head { height: var(--rowH); transition: height .4s ease; }
+  .wp-cat-label {
+    font-family: var(--font-display); font-weight: 800;
+    font-size: 76px; line-height: 1; letter-spacing: -0.01em;
+    text-transform: uppercase; color: var(--color-neon);
+    cursor: pointer; user-select: none;
+    transition: filter .3s ease, font-size .6s cubic-bezier(0.22, 1, 0.36, 1), opacity .3s ease;
+  }
+  .wp-cat.is-open .wp-cat-label { font-size: 120px; transition: filter .3s ease, font-size .4s ease, opacity .3s ease; }
+  .workpage.has-open .wp-cat:not(.is-open) .wp-cat-label { filter: blur(4px); opacity: 0.45; }
+
+  /* ---------- Seiten-Animation: die Kategorie-Überschriften ploppen beim Laden
+       nacheinander auf (gestaffelt über --i, mit leichtem Feder-Overshoot). ---------- */
+  .wp-cat-label { animation: wp-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--i, 0) * 0.08s + 0.1s); }
+  @keyframes wp-pop {
+    from { opacity: 0; transform: translateY(26px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes wp-fadein { from { opacity: 0; } to { opacity: 1; } }   /* Mobile-Eintritt (nur opacity) */
+  @media (prefers-reduced-motion: reduce) { .wp-cat-label { animation: none; } }
+
+  /* Weiterblättern per Mausrad: Umschalten ohne Übergänge (sonst rutscht die Überschrift) */
+  .workpage.wp-instant .wp-cat, .workpage.wp-instant .wp-cat-head, .workpage.wp-instant .wp-cat-label { transition: none !important; }
+
+  /* Fester Spalt: Scroll-Ebene über dem Label → Bilder scrollen über die Überschrift */
+  .wp-cat-scroll { position: absolute; inset: 0; overflow: hidden; z-index: 2; pointer-events: none; }
+  .wp-cat.is-open .wp-cat-scroll { overflow-y: auto; overscroll-behavior: contain; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none; }
+  .wp-cat.is-open .wp-cat-scroll::-webkit-scrollbar { width: 0; height: 0; display: none; }
+  .wp-cat-body { position: relative; }
+  /* durchsichtig, so hoch wie die ganze offene Kategorie: bei scrollTop 0 stehen die Projekte noch
+     komplett UNTER dem Spalt → beim Weiterblättern steigen sie von unten herein (Endlos-Fluss) */
+  .wp-spacer { height: calc(var(--rowH) + var(--panelH, 400px)); }
+  .wp-end-spacer { height: calc(var(--rowH) + var(--panelH, 400px)); }   /* Raum, damit das letzte Projekt den oberen Rand erreichen kann */
+  /* Abstand zwischen den Projekten zweier Kategorien im Band (= 1 Rasterzeile → beim Öffnen per
+     Hover liegt die Fortsetzung der vorigen Kategorie noch komplett über dem sichtbaren Spalt) */
+  .wp-ghost-gap { height: var(--rowH); }
+
+  /* Projekte: zentrierte Gruppe, nebeneinander, deutlich versetzt (→ Scrollen im Spalt) */
+  .wp-proj-layer {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start;
+    gap: 2.25rem 3rem; max-width: 78%; margin: 0 auto;
+    padding: calc(var(--ppad) + 0.5rem) 0 calc(var(--ppad) + 2.5rem);
+  }
+  .wp-proj { display: block; max-width: calc(50% - 1.5rem); }   /* höchstens 2 nebeneinander → bleiben versetzt in einer Reihe */
+  .wp-proj:nth-child(even) { margin-top: 8rem; }
+  .wp-proj:nth-child(3n) { margin-top: 4rem; }
+  .wp-proj-inner { display: block; text-decoration: none; color: inherit; width: calc(var(--fitH) * var(--ar)); max-width: 100%; }
+  .wp-proj-media { height: auto; aspect-ratio: var(--ar); max-height: var(--fitH); overflow: hidden; box-shadow: -20px -20px 50px 0 #000, 20px 20px 50px 0 #000; }
+  .wp-proj-media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  /* Titel + Kurzbeschreibung rechtsbündig unter dem Bild (ohne Nummer) */
+  .wp-proj-meta { display: flex; justify-content: flex-end; text-align: right; margin-top: 0.8rem; }
+  .wp-proj-title { font-family: var(--font-display); color: var(--color-off); font-size: 1rem; line-height: 1.35; }
+  .wp-proj-title .ln { display: block; font-weight: 500; text-transform: uppercase; }
+  .wp-proj-title .sub { display: block; font-weight: 300; margin-top: 0.15rem; }
+
+  /* ===== Mobil (bis 767px): Tap-Akkordeon (Figma 18-901) ===== */
+  @media (max-width: 767px) {
+    .workpage { --rowH: 25vw; --m: 0; background-size: calc(100% / 4) 100%; }
+    .wp-cursor { display: none; }
+    /* Unten etwas Luft, damit der Footer erst später hochkommt (man die letzte Kategorie
+       in Ruhe sieht, bevor die Footer-Zone beginnt). */
+    .wp-main { padding-top: 25vw; padding-bottom: 45vh; position: static; }   /* Sticky nur Desktop */
+
+    /* ---- Footer: Reveal wie Desktop; mobil KEIN Flex ----
+       Logo + Wörter als ein unten verankerter Fluss-Block. Keine vh-Werte →
+       der Abstand Logo → E-Mail ist bei JEDER Bildschirmhöhe gleich (fest 20px).
+       DOM-Reihenfolge im Fluss: Mail · LinkedIn · Imprint · Privacy. */
+    .wp-footer-inner {
+      display: block; position: absolute; left: 0; right: 0; bottom: 9vw;
+      text-align: center;
+    }
+    .wp-footer-logo { position: static; inset: auto; padding: 0; display: block; margin: 0; }
+    .wp-footer-logo img { display: block; width: 28.8vw; max-width: 208px; margin: 0 auto 20px; }  /* 20% kleiner; 20px-Abstand zur E-Mail */
+    .wp-footer-bar {
+      position: static; inset: auto; height: auto; padding: 0; display: block;
+      grid-template-columns: none;   /* Desktop-Grid restlos auflösen → sauberer Block-Fluss */
+      text-align: center; font-size: 2.6vw; letter-spacing: 0.12em;   /* = Header (work/about/contact) */
+    }
+    /* Grid-Reste der Kinder zurücksetzen, sonst würden sie als Grid-Items platziert */
+    .wp-footer-mail, .wp-footer-li, .wp-footer-legal { grid-column: auto; justify-self: auto; }
+    .wp-footer-mail { display: block; }                       /* einzige kleingeschriebene Zeile */
+    .wp-footer-li   { display: block; margin-top: 4.2vw; }
+    .wp-footer-legal { display: block; margin-top: 4.2vw; }   /* Imprint + Privacy untereinander */
+    .wp-footer-legal a { display: block; }
+    .wp-footer-legal a + a { margin-top: 4.2vw; }
+    /* keine eigene Linie oben: die Unterkante des Headers ist schon die 1px-Rasterlinie (wie About) */
+    .wp-intro { height: 25vw; justify-content: center; align-items: flex-end; padding-left: 0; padding-bottom: 10px; border-top: 0; }
+    .wp-intro span { font-size: 2.6vw; letter-spacing: 0.12em; }
+
+    /* Kategorie = Akkordeon im Fluss (schiebt beim Öffnen die anderen nach unten) */
+    .wp-cat { position: static; height: auto; }
+    .wp-cat.is-open { height: auto; }   /* wichtig: Desktop-Festhöhe überschreiben, sonst Überlappung */
+    .wp-cat-head { position: static; height: 25vw; justify-content: center; padding-left: 0; }
+    .wp-cat.is-open .wp-cat-head { height: 25vw; }
+    .wp-cat-label {
+      font-size: 15vw; text-align: center; filter: blur(1.2vw);
+      transform-origin: center center; will-change: transform; cursor: pointer;
+      transition: filter .3s ease, opacity .3s ease, transform .3s ease;
+      /* Eintritt mobil: Überschriften blenden nacheinander ein (nur opacity, damit es nicht
+         mit dem scaleLabels-transform kollidiert; backwards = hält danach nicht die opacity). */
+      animation: wp-fadein 0.6s ease backwards;
+      animation-delay: calc(var(--i, 0) * 0.1s + 0.15s);
+    }
+    .wp-cat.is-open .wp-cat-label { filter: none; }                                   /* aktiv: scharf */
+    .workpage.has-open .wp-cat:not(.is-open) .wp-cat-label { filter: blur(1.2vw); opacity: 0.5; }
+
+    /* Galerie: klappt im Fluss auf (Höhe per JS animiert) */
+    .wp-cat-scroll { position: static; inset: auto; display: block; height: 0; overflow: hidden; z-index: auto; pointer-events: auto; transition: height .4s ease; }
+    .wp-spacer, .wp-ghost, .wp-ghost-gap { display: none; }   /* mobil: Akkordeon ohne Fortsetzungen */
+
+    /* Projekte: vertikal gestapelt, zentriert (Figma 18-901) */
+    /* etwas kompakter: kleinere Bilder, weniger Abstand → geöffnete Kategorie kürzer */
+    .wp-proj-layer { flex-direction: column; flex-wrap: nowrap; align-items: center; max-width: 100%; gap: 1.25rem; margin: 0; padding: 1.25rem 0.9rem 1.75rem; }
+    .wp-proj, .wp-proj:nth-child(even), .wp-proj:nth-child(3n) { margin-top: 0; }
+    .wp-proj { max-width: none; }
+    /* Querformat 52vw breit; Hochformat höchstens ~66vw hoch (sonst würde es sehr lang) */
+    .wp-proj-inner { width: min(52vw, 66vw * var(--ar)); max-width: 52vw; }
+    .wp-proj-media { height: auto; aspect-ratio: var(--ar); }
+  }
+</style>
+
+<!-- hmr-bump 1 -->
+
+<!-- hmr-bump 1 -->
+
+<!-- hmr-bump 1793200014 -->
+
+<!-- hmr-bump 1793302146 -->
+
+
+
+

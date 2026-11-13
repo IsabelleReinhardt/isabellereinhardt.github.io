@@ -1,0 +1,131 @@
+---
+// EN/DE-Schalter für die Fließtexte (nur About + Projektdetailseiten).
+// Überschriften, Stichpunkte, Navigation bleiben immer englisch – nur Elemente mit
+// data-l="en" / data-l="de" wechseln. Start: immer Englisch; die Wahl wird im Browser gemerkt.
+//
+// Design (Variante A, bewusst zurückhaltend): nur Schrift „de/en" in der Textfarbe der Seite –
+// die aktive Sprache kräftig, die andere + Schrägstrich dünn und blasser. EIN Knopf: Klick wechselt.
+// (Falls zu unauffällig: als Nächstes Kreis in Schwarz/Weiß ausprobieren – siehe Entwurf.)
+// Position: Mitte der Rasterkachel unten links (Desktop), mobil unten mittig.
+// Ebene z 35 → der Footer (z 40) schiebt sich darüber.
+interface Props {
+  theme?: 'dark' | 'light';   // dark = dunkle Seite (About → helle Schrift), light = helle Seite (Projekt → dunkle Schrift)
+}
+const { theme = 'dark' } = Astro.props;
+---
+
+<!-- Sprache sofort setzen (vor dem Rendern der Texte) → kein kurzes Aufblitzen der falschen Sprache -->
+<script is:inline>
+  (function () {
+    var l = 'en';
+    try { if (localStorage.getItem('ir-lang') === 'de') l = 'de'; } catch (e) {}
+    document.documentElement.dataset.lang = l;
+    document.documentElement.lang = l;
+  })();
+</script>
+
+<button type="button" class:list={['lang-toggle', `lang-${theme}`]} aria-label="Switch language">
+  <span data-t="de">de</span><span class="lt-slash">/</span><span data-t="en">en</span>
+</button>
+
+<script>
+  // EIN Knopf: Klick → Sprache wechselt (de ↔ en)
+  const root = document.documentElement;
+  const btn = document.querySelector<HTMLButtonElement>('.lang-toggle');
+  const spans = document.querySelectorAll<HTMLSpanElement>('.lang-toggle [data-t]');
+  const sync = () => {
+    const l = root.dataset.lang === 'de' ? 'de' : 'en';
+    spans.forEach((t) => t.classList.toggle('is-on', t.dataset.t === l));
+    btn?.setAttribute('aria-label', l === 'de' ? 'Switch to English' : 'Switch to German');
+  };
+  btn?.addEventListener('click', () => {
+    const l = root.dataset.lang === 'de' ? 'en' : 'de';
+    root.dataset.lang = l; root.lang = l;
+    try { localStorage.setItem('ir-lang', l); } catch (e) {}
+    sync();
+    // Texte ändern ihre Länge → Seiten-Layout (Zeitleisten, Raster-Einrasten …) neu messen lassen
+    window.dispatchEvent(new Event('resize'));
+  });
+  sync();
+
+  // Desktop: über Bildern/Videos unsichtbar (große Medien, IMPRESSION-Leiste, NEXT PROJECT, About-Fotos).
+  // Geprüft wird, was unter Mitte + Ecken des Knopfs liegt – bei jedem Scroll-Frame und laufend,
+  // weil sich Leisten auch ohne Scrollen bewegen.
+  const MEDIA = 'img, video, .pd-video, .pd-imp-band, .fan-card, .pd-gal';
+  const mqD = window.matchMedia('(min-width: 768px)');
+  let lastCheck = 0;
+  function overMedia(): boolean {
+    if (!btn) return false;
+    const r = btn.getBoundingClientRect();
+    const pts = [[r.left + r.width / 2, r.top + r.height / 2], [r.left + 4, r.top + 4], [r.right - 4, r.top + 4], [r.left + 4, r.bottom - 4], [r.right - 4, r.bottom - 4]];
+    return pts.some(([x, y]) => document.elementsFromPoint(x, y).some((el) => el !== btn && !btn.contains(el) && (el as Element).matches(MEDIA)));
+  }
+  function check(now: number) {
+    if (now - lastCheck > 120) {   // ~8× pro Sekunde reicht und kostet kaum Leistung
+      lastCheck = now;
+      btn?.classList.toggle('is-over-media', mqD.matches && overMedia());
+    }
+    requestAnimationFrame(check);
+  }
+  requestAnimationFrame(check);
+
+  // About (Desktop): das About-Raster ist anders aufgebaut als auf den Projektseiten →
+  // Knopf genau in die Mitte der Rasterkachel unten links setzen (gemessen am echten Raster,
+  // Zustand ganz oben auf der Seite; beim Scrollen bleibt er fix stehen wie auf den Projektseiten).
+  const abGrid = document.querySelector<HTMLElement>('.ab-grid');
+  const abMain = document.querySelector<HTMLElement>('.ab-main');
+  function placeOnAboutGrid() {
+    if (!btn || !abGrid || !abMain) return;
+    if (!mqD.matches) { btn.style.left = ''; btn.style.bottom = ''; return; }
+    const firstLine = abGrid.querySelector<HTMLElement>('.ab-v');
+    const g = abGrid.getBoundingClientRect();
+    if (firstLine) btn.style.left = (g.left + firstLine.getBoundingClientRect().left) / 2 + 'px';
+    const row = parseFloat(getComputedStyle(abMain).getPropertyValue('--ab-row')) || 171;
+    const top0 = abMain.getBoundingClientRect().top + window.scrollY;   // Rasterursprung (Seite)
+    const H = window.innerHeight;
+    // Kachel, in der die Standardposition (halbe Zeile über dem unteren Rand) liegt
+    const k = Math.floor((H - row / 2 - top0) / row);
+    const centerY = top0 + k * row + row / 2;
+    btn.style.bottom = (H - centerY) + 'px';
+  }
+  placeOnAboutGrid();
+  window.addEventListener('resize', placeOnAboutGrid);
+  window.addEventListener('load', placeOnAboutGrid);
+</script>
+
+<style is:global>
+  /* Nur die jeweils aktive Sprache zeigen (Standard: Englisch) */
+  html:not([data-lang='de']) [data-l='de'],
+  html[data-lang='de'] [data-l='en'] { display: none !important; }
+
+  .lang-toggle {
+    /* Desktop: Mitte der Rasterkachel unten LINKS (1. von 7 Spalten, halbe Zeile über dem Rand) */
+    position: fixed; left: calc(100vw / 14); bottom: 85px; transform: translate(-50%, 50%);
+    z-index: 35; padding: 10px 14px; border: 0; background: none; cursor: pointer;
+    font-family: var(--font-display); font-size: 17px; line-height: 1; letter-spacing: 0.02em;
+    transition: opacity .3s ease;
+  }
+  .lang-toggle span { font-weight: 200; opacity: 0.6; transition: opacity .2s ease; }
+  .lang-toggle span.is-on { font-weight: 500; opacity: 1; }
+  .lang-toggle:hover span { opacity: 1; }
+  .lang-toggle:focus-visible { outline: 1px solid var(--color-neon); outline-offset: 2px; }
+  .lang-dark  { color: var(--color-off); }
+  .lang-light { color: var(--color-ink); }
+  .lang-toggle.is-over-media { opacity: 0; pointer-events: none; }
+  /* About: eigenes Raster – 1. schmale Spalte links (= vier linke Spalten / 4), Zeile 171px */
+  .lang-dark { left: calc((40.542vw - 123px) * 0.2490 / 2); bottom: 85.5px; }
+
+  @media (max-width: 767px) {
+    /* mobil unten mittig */
+    .lang-toggle, .lang-dark { font-size: 3.8vw; left: 50%; bottom: 3vw; transform: translate(-50%, 0); padding: 2.2vw 4vw; }
+    /* runder Hintergrund in Seitenfarbe (80 % Deckkraft, Rand läuft weich aus) → lesbar über Text */
+    .lang-toggle::before {
+      content: ''; position: absolute; left: 50%; top: 50%; width: 30vw; height: 30vw;
+      transform: translate(-50%, -50%); z-index: -1; border-radius: 50%;
+      /* sehr weicher Verlauf: nur die Mitte deckt, nach außen läuft es lang und gleichmäßig aus */
+      background: radial-gradient(closest-side, var(--lt-bg) 0%, var(--lt-bg) 22%, color-mix(in srgb, var(--lt-bg) 55%, transparent) 55%, color-mix(in srgb, var(--lt-bg) 18%, transparent) 80%, transparent 100%); opacity: 0.8;
+    }
+    .lang-dark  { --lt-bg: var(--color-ink); }
+    .lang-light { --lt-bg: var(--color-off); }
+  }
+</style>

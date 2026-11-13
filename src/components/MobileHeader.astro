@@ -1,0 +1,65 @@
+---
+// Fixierter Mobile-Header (nur < md) — site-weit, nach Figma-Frame 18-901.
+// Logo links (zurück zur Startseite) + Menüpunkte rechts; aktiver Punkt = neon-grüne Kachel.
+// Höhe = eine Rasterkachel (25vw). Inhalt der Seite braucht mobil pt-[25vw].
+interface NavItem { label: string; href: string; }
+interface Props { nav: NavItem[]; active?: string; theme?: 'dark' | 'light'; back?: boolean; }
+// back = in der ersten leeren Kachel ein Zurück-Pfeil (Impressum/Datenschutz)
+const { nav, active, theme = 'dark', back = false } = Astro.props;
+const startCol = 5 - nav.length;   // 3 Punkte → ab Spalte 2, 2 Punkte → ab Spalte 3
+const fillers = startCol - 2;      // leere Kacheln zwischen Logo und Navi
+const isActive = (label: string) => !!active && active.toLowerCase() === label.toLowerCase();
+
+// Hell-Variante (z. B. Contact-Seite): weißer Grund, schwarze Schrift/Logo, helle Linien.
+const light = theme === 'light';
+const bd = light ? 'border-[#BEBEBE]' : 'border-line';
+// Schatten nach unten erst, sobald gescrollt wird (siehe <style>/<script> unten).
+const headerCls = light ? `bg-off ${bd}` : `bg-ink ${bd}`;
+const inactiveText = light ? 'text-ink' : 'text-off';
+---
+
+<header
+  class:list={['mobile-header fixed inset-x-0 top-0 z-50 grid h-[25vw] grid-cols-4 border-b md:hidden', headerCls]}
+  data-theme={light ? 'light' : 'dark'}
+>
+  <a href="/" aria-label="Home" class:list={['flex items-center justify-center border-r', bd]}>
+    <span class="logo-mark is-sm" style={light ? '--logo-c: var(--color-ink)' : undefined} aria-hidden="true"></span>
+  </a>
+
+  {Array.from({ length: fillers }).map((_, k) => (back && k === 0 ? (
+    <a href="/" data-back class:list={['back-link flex items-center justify-center border-r', bd, inactiveText]} aria-label="Back">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H4M10 6l-6 6 6 6" /></svg>
+    </a>
+  ) : <div class:list={['border-r', bd]}></div>))}
+
+  {nav.map((n, i) => (
+    <a
+      href={n.href}
+      style={`grid-column: ${startCol + i}`}
+      class:list={[
+        'flex items-center justify-center border-r font-display text-[0.875rem] font-medium uppercase tracking-[0.12em] last:border-r-0',
+        bd,
+        isActive(n.label) ? 'bg-neon text-ink' : inactiveText,
+      ]}
+    >
+      {n.label}
+    </a>
+  ))}
+</header>
+
+<style is:global>
+  /* Schatten blendet beim Scrollen weich ein (vorher flach auf dem Inhalt) */
+  .mobile-header { box-shadow: none; transition: box-shadow .3s ease; }
+  .mobile-header.is-scrolled[data-theme='dark']  { box-shadow: 0 2.5vw 5vw 0 #000000; }
+  .mobile-header.is-scrolled[data-theme='light'] { box-shadow: 0 1.5vw 5vw 0 rgba(0, 0, 0, 0.14); }
+</style>
+
+<script>
+  // Klasse „is-scrolled" setzen, sobald die Seite nicht mehr ganz oben ist.
+  const mobileHeader = document.querySelector('.mobile-header');
+  if (mobileHeader) {
+    const update = () => mobileHeader.classList.toggle('is-scrolled', window.scrollY > 4);
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+  }
+</script>
