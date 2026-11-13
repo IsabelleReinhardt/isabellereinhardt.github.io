@@ -874,7 +874,7 @@ const categories = [
 
     /* Galerie: klappt im Fluss auf (Höhe per JS animiert) */
     .wp-cat-scroll { position: static; inset: auto; display: block; height: 0; overflow: hidden; z-index: auto; pointer-events: auto; transition: height .4s ease; }
-    .wp-spacer, .wp-ghost, .wp-ghost-gap { display: none; }   /* mobil: Akkordeon ohne Fortsetzungen */
+    .wp-spacer, .wp-ghost, .wp-ghost-gap, .wp-end-spacer { display: none; }   /* mobil: Akkordeon ohne Fortsetzungen und ohne den Desktop-Auslauf am Ende (sonst lange leere Fläche unter den Projekten) */
 
     /* Projekte: vertikal gestapelt, zentriert (Figma 18-901) */
     /* etwas kompakter: kleinere Bilder, weniger Abstand → geöffnete Kategorie kürzer */
