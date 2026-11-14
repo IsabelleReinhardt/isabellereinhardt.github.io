@@ -862,7 +862,8 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
     setTimeout(() => { galJumping = false; }, 800);
   }
   let ticking = false;
-  let galT = 0;   // Wachstums-Fortschritt der Galerie (erst ab ganz groß per Mausrad verschiebbar)
+  let galT = 0;
+  let galResetting = false;   // Wachstums-Fortschritt der Galerie (erst ab ganz groß per Mausrad verschiebbar)
   let startTeaser = () => {};   // wird unten gesetzt, falls es einen Clip gibt
   function onScroll() {
     if (header) header.classList.toggle('is-scrolled', window.scrollY > 4);
@@ -872,6 +873,16 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
     apply(t);
     if (isGal) {
       galT = t;
+      // Zurück Richtung Anfang (Leiste schrumpft wieder zum Titelbild): Leiste auf den Anfang
+      // zurücksetzen → in der Startbox steht wieder das richtige Titelbild/-video.
+      if (t < 0.97) {
+        if (galTarget !== 0 || galOff !== 0) { galTarget = 0; galGlide(); }
+        if (galBox && galBox.scrollLeft > 0 && !galResetting) {
+          galResetting = true;
+          galBox.scrollTo({ left: 0, behavior: 'smooth' });
+          setTimeout(() => { galResetting = false; }, 500);
+        }
+      }
       applyGal();
       // EN/DE-Schalter ausblenden, solange er auf der großen Leiste (Vollbild-Knopf) liegen würde
       const tg = document.querySelector('.lang-toggle');
@@ -906,11 +917,7 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
         centerGal();
       }, { passive: false });
       // mobil: natives waagerechtes Wischen der Leiste
-      // (nur nach echtem Wischen auf der Leiste – sonst könnte ein Scroll-Ereignis beim Laden, z. B.
-      // durch das Einrasten der Leiste am iPhone, die Seite ungewollt nach unten ziehen)
-      let galTouched = false;
-      galBox.addEventListener('touchstart', () => { galTouched = true; }, { passive: true });
-      galBox.addEventListener('scroll', () => { if (!mq.matches && galTouched) centerGal(); }, { passive: true });
+      // (Mobil springt die Seite beim Wischen der Leiste NICHT an einen bestimmten Punkt – nur Desktop.)
       // zentrierte Galerie (Porträts) auf Touch-Geräten: waagerecht wischen verschiebt die Leiste
       // (nur wenn sie breiter als der Bildschirm ist); senkrecht scrollt weiter die Seite.
       if (galC >= 0) {
