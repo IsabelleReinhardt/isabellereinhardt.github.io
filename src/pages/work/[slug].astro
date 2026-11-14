@@ -888,8 +888,13 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
   if (stage && pin && title && meta && video) {
     window.addEventListener('scroll', tick, { passive: true });
     if (isGal && galBox) {
-      galBox.addEventListener('wheel', (e) => {
-        if (!mq.matches || galT < 0.98) return;   // erst wenn die Leiste ganz groß ist
+      // Desktop: Ist die große Leiste ganz groß und im Bild, wird JEDES Mausrad-/Trackpad-Scrollen
+      // (egal wo der Cursor ist) erst in die Leiste umgeleitet. Erst wenn sie einmal ganz durch ist
+      // (Ende beim Runterscrollen bzw. Anfang beim Hochscrollen), scrollt die Seite weiter.
+      window.addEventListener('wheel', (e) => {
+        if (!mq.matches || galT < 0.98 || e.ctrlKey || e.defaultPrevented) return;   // erst wenn die Leiste ganz groß ist; Pinch-Zoom nicht anfassen
+        const gr = galBox.getBoundingClientRect();
+        if (gr.bottom < window.innerHeight * 0.5 || gr.top > window.innerHeight * 0.5) return;   // Leiste nicht (mehr) mittig im Bild
         const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
         const dx = e.deltaMode === 1 ? e.deltaX * 16 : e.deltaX;
         const d = Math.abs(dx) > Math.abs(dy) ? dx : dy;
