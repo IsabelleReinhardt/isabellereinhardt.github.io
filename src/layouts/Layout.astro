@@ -2,10 +2,27 @@
 // Grundgerüst jeder Seite. Titel und Beschreibung sind bewusst auf ALLEN Seiten gleich und englisch
 // (zentral in src/data/site.ts) – auch die Vorschau beim Teilen (Open Graph) kommt von hier.
 import '../styles/global.css';
-import { SITE_TITLE, SITE_DESCRIPTION, SITE_URL } from '../data/site';
+import { SITE_TITLE, SITE_DESCRIPTION, SITE_URL, LINKEDIN } from '../data/site';
 
 const ogImage = new URL('/og-image.jpg', SITE_URL).href;
 const pageUrl = new URL(Astro.url.pathname, SITE_URL).href;
+
+// Strukturierte Daten für Suchmaschinen: „Diese Seite gehört der Person Isabelle Reinhardt"
+// (hilft Google, die Seite bei einer Suche nach dem Namen richtig zuzuordnen).
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    { '@type': 'WebSite', '@id': SITE_URL + '/#website', url: SITE_URL + '/', name: SITE_TITLE, inLanguage: 'en' },
+    {
+      '@type': 'Person', '@id': SITE_URL + '/#person', name: 'Isabelle Reinhardt',
+      url: SITE_URL + '/', image: new URL('/about/AboutBild1-web.jpg', SITE_URL).href,
+      jobTitle: 'Media Design Student',
+      affiliation: { '@type': 'CollegeOrUniversity', name: 'RWU Hochschule Ravensburg-Weingarten' },
+      address: { '@type': 'PostalAddress', addressLocality: 'Weingarten', addressCountry: 'DE' },
+      sameAs: [LINKEDIN],
+    },
+  ],
+};
 ---
 
 <!doctype html>
@@ -17,6 +34,9 @@ const pageUrl = new URL(Astro.url.pathname, SITE_URL).href;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{SITE_TITLE}</title>
     <meta name="description" content={SITE_DESCRIPTION} />
+    <meta name="author" content="Isabelle Reinhardt" />
+    <link rel="sitemap" href="/sitemap.xml" />
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
     <link rel="canonical" href={pageUrl} />
 
     <!-- Favicon = Monogramm (neongrün auf Schwarz). ?v=… zwingt Browser, ein altes, zwischen-

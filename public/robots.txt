@@ -1,0 +1,5 @@
+# Suchmaschinen dürfen alles lesen; die Sitemap listet alle Seiten.
+User-agent: *
+Allow: /
+
+Sitemap: https://isabellereinhardt.github.io/sitemap.xml
