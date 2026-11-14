@@ -303,6 +303,14 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
     const rowCur = new Array(HLINES + 1).fill(0);
     const EASE = 0.1;   // Annäherungsrate pro Frame (~0,5s Swoosh)
     const fixedEls = [...pfGrid.querySelectorAll('.pf-fixed')];   // Logo, Nav, Titel, Imprint, Privacy
+    // Bilder/Videos: stehen fest an ihrem Platz (feste Größe, kein Neuberechnen pro Frame → kein
+    // Zittern). Die Zelle ist nur das „Fenster" – wächst/schrumpft sie, ändert sich nur der Ausschnitt.
+    const tileMedia = [...pfGrid.querySelectorAll('.pf-tile')].map((a) => ({ el: a.querySelector('img, video'), r: +a.dataset.r, c: +a.dataset.c })).filter((t) => t.el);
+    const setBase = () => {   // Grundgröße einer Zelle (ohne Pulsieren/Hover) für die feste Mediengröße
+      pfGrid.style.setProperty('--pf-cw', ((pfGrid.clientWidth - VLINES) / COLS).toFixed(2) + 'px');
+      pfGrid.style.setProperty('--pf-ch', ((pfGrid.clientHeight - HLINES) / ROWS).toFixed(2) + 'px');
+    };
+    setBase(); window.addEventListener('resize', setBase);
     const CL = (k) => (k >= 1 && k <= VLINES) ? colCur[k] : 0;    // Offset vertikaler Linie k (Rand = 0)
     const RL = (k) => (k >= 1 && k <= HLINES) ? rowCur[k] : 0;    // Offset horizontaler Linie k (Rand = 0)
     let hover = null;   // {c, r} oder null
@@ -331,6 +339,11 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
         const er = +el.dataset.er, ec = +el.dataset.ec;
         const cx = (CL(ec - 1) + CL(ec)) / 2, cy = (RL(er - 1) + RL(er)) / 2;
         el.style.transform = `translate(${(-cx).toFixed(2)}px, ${(-cy).toFixed(2)}px)`;
+      }
+      // Bilder/Videos genauso gegen-verschieben → sie stehen still, die Zelle zeigt nur einen anderen Ausschnitt
+      for (const t of tileMedia) {
+        const cx = (CL(t.c - 1) + CL(t.c)) / 2, cy = (RL(t.r - 1) + RL(t.r)) / 2;
+        t.el.style.translate = `${(-cx).toFixed(2)}px ${(-cy).toFixed(2)}px`;
       }
     }
 
@@ -419,6 +432,15 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
 </script>
 
 <style is:global>
+  /* Startseite Desktop: Bilder/Videos haben eine FESTE Größe (Grundzelle + 32px Reserve je Seite,
+     damit beim Pulsieren/Hovern nie ein Rand sichtbar wird) und sitzen mittig in ihrer Zelle.
+     Die Zelle (overflow hidden) ist nur das Fenster → beim Wachsen/Schrumpfen ändert sich nur der Ausschnitt. */
+  .pf-grid .pf-tile { position: relative; overflow: hidden; }
+  .pf-grid .pf-tile > img, .pf-grid .pf-tile > video {
+    position: absolute; left: 50%; top: 50%; max-width: none;
+    width: calc(var(--pf-cw, 14vw) + 64px); height: calc(var(--pf-ch, 20vh) + 64px);
+    margin-left: calc((var(--pf-cw, 14vw) + 64px) / -2); margin-top: calc((var(--pf-ch, 20vh) + 64px) / -2);
+  }
   /* Hover-Vergrößerung: die Spalten-/Zeilengröße der gehoverten Zelle wächst (per JS) → Bild UND
      die angrenzenden Gridlinien wandern gekoppelt nach außen. Weiche Transition der Tracks. */
   /* Hinweis: Bild-Raster, Buchstaben-Overlay und die Glyphen-Verschiebung werden pro Frame per JS
