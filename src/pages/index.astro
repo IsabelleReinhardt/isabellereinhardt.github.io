@@ -419,17 +419,7 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
   window.addEventListener('resize', tryPlay);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) tryPlay(); });
 
-  // Mobile: 1. Klick auf ein Bild → Titel + 50% Deckkraft; 2. Klick → Projekt öffnen.
-  document.querySelectorAll('.m-proj').forEach((a) => {
-    a.addEventListener('click', (e) => {
-      if (!a.classList.contains('is-open')) {
-        e.preventDefault();
-        document.querySelectorAll('.m-proj.is-open').forEach((o) => o.classList.remove('is-open'));
-        a.classList.add('is-open');
-      }
-      // bereits offen → Standard-Klick lässt den Link öffnen
-    });
-  });
+  // Mobile: Antippen eines Bildes öffnet direkt das Projekt (normaler Link, kein Zwischenschritt).
 </script>
 
 <style is:global>

@@ -906,7 +906,11 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
         centerGal();
       }, { passive: false });
       // mobil: natives waagerechtes Wischen der Leiste
-      galBox.addEventListener('scroll', () => { if (!mq.matches) centerGal(); }, { passive: true });
+      // (nur nach echtem Wischen auf der Leiste – sonst könnte ein Scroll-Ereignis beim Laden, z. B.
+      // durch das Einrasten der Leiste am iPhone, die Seite ungewollt nach unten ziehen)
+      let galTouched = false;
+      galBox.addEventListener('touchstart', () => { galTouched = true; }, { passive: true });
+      galBox.addEventListener('scroll', () => { if (!mq.matches && galTouched) centerGal(); }, { passive: true });
       // zentrierte Galerie (Porträts) auf Touch-Geräten: waagerecht wischen verschiebt die Leiste
       // (nur wenn sie breiter als der Bildschirm ist); senkrecht scrollt weiter die Seite.
       if (galC >= 0) {
