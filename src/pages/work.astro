@@ -380,6 +380,14 @@ const categories = [
   }
   function applyFooter() {
     if (!footer) return;
+    // Mobil: Der Footer liegt einfach am Seitenende im normalen Fluss (CSS) und scrollt nativ mit –
+    // kein JS-Nachführen pro Bild, das am iPhone hinter dem Finger herhängt.
+    if (!mq.matches) {
+      if (footer.style.transform) footer.style.transform = '';
+      if (mainEl && mainEl.style.transform) mainEl.style.transform = '';
+      footer.classList.add('is-active');
+      return;
+    }
     footer.style.transform = 'translateY(' + ((1 - footerP) * 100).toFixed(2) + '%)';
     footer.classList.toggle('is-active', footerP > 0.5);
     // Inhalt pixelgenau gegen den Scroll in die Fußzone halten: um EXAKT die (ganzzahlige)
@@ -691,7 +699,15 @@ const categories = [
 
   /* unsichtbare Scrollzone am Seitenende, in die der native Scroll hineinläuft */
   .wp-footer-space { height: 100vh; }
-  @media (max-width: 767px) { .wp-footer-space { height: 200vh; } }   /* mobil: Footer steigt halb so schnell auf */
+  /* Mobil: Footer ohne Aufsteige-Effekt → liegt als normaler Block am Seitenende (scrollt 1:1 mit, hängt nicht) */
+  @media (max-width: 767px) {
+    .wp-footer-space { display: none; }
+    .wp-footer {
+      position: relative; inset: auto; height: 75svh; transform: none !important; will-change: auto;
+      pointer-events: auto; background: var(--color-ink);
+      -webkit-backdrop-filter: none; backdrop-filter: none; -webkit-mask-image: none; mask-image: none;
+    }
+  }
 
   .wp-footer-logo {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
