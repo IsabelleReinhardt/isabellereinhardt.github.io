@@ -21,9 +21,12 @@ const pageUrl = new URL(Astro.url.pathname, SITE_URL).href;
 
     <!-- Favicon = Monogramm (neongrün auf Schwarz). ?v=… zwingt Browser, ein altes, zwischen-
          gespeichertes Favicon zu ersetzen – bei einem neuen Favicon die Zahl einfach erhöhen. -->
-    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=4" />
-    <link rel="icon" href="/favicon.ico?v=4" sizes="48x48" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=4" />
+    <!-- Tab-Icon: nur das Logo auf transparentem Grund (Safari zieht um dunkle, randvolle Icons
+         sonst einen hellen Rahmen). Große Fassungen (Favoriten-Kachel, Homescreen) randlos schwarz. -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=5" />
+    <link rel="icon" href="/favicon.ico?v=5" sizes="16x16 32x32 48x48" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=5" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=5" />
     <meta name="theme-color" content="#000000" />
 
     <!-- Vorschau beim Teilen (WhatsApp, iMessage, LinkedIn, Slack …) -->
