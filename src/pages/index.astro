@@ -17,26 +17,27 @@ const linkLabel = (href?: string) => {
 const projects = [
   // Branding: Titelvideo (kleine Fassung in deinem Ordner „branding zam'"), Standbild = BrandingCover
   // title = angezeigter Titel beim Hover/Antippen (\n = Zeilenumbruch); ohne title wird name gezeigt
+  // fill: true = Bild füllt wie früher seine Zelle (ohne festen Platz) – Ayra, Comeback, Modern Elvis
   { name: 'Branding',                img: "/projects/branding zam'/BrandingCover.png", r: 2, c: 4, zoom: true,
-    title: 'Baubuero\nzam’',
+    title: 'Corporate\ndesign',
     video: "/projects/branding zam'/LogoSchnittMotionLanding.mp4", href: '/work/branding-zam' },
   { name: 'Logo Animation',          img: '/projects/logo-animation-web.jpg',          r: 5, c: 3, zoom: false,
-    title: 'Armed\nangels',
+    title: 'Logo\nanimation',
     video: '/projects/logo animation/LogoAnimationLanding.mp4', href: '/work/logo-animation' },
   // Orbit: Ausschnitt des Musikvideos (0:36–0:48, kleine Fassung in deinem Ordner), Standbild bis es läuft
   { name: 'Orbit',                   img: '/projects/motion-musikvideo-web.jpg',       r: 3, c: 7, zoom: false,
-    title: 'Orbit',
+    title: 'Music\nvideo',
     video: '/projects/orbit musikvideo/OrbitLanding.mp4', href: '/work/orbit' },
   { name: 'Comeback',                img: '/projects/foto comeback/Coverbild-web.jpg',   r: 5, c: 2, zoom: false,
-    title: 'Comeback', href: '/work/comeback' },
+    title: 'Genre\nphotography', href: '/work/comeback', fill: true },
   { name: '3D Ayra',                 img: '/projects/3d character/0001.jpg',       r: 4, c: 6, zoom: false,
-    title: 'Ayra', href: '/work/ayra' },
+    title: '3D\ncharacter', href: '/work/ayra', fill: true },
   { name: 'Portrait Foto',           img: '/projects/foto portraits/Coverbild-web.jpg',   r: 4, c: 5, zoom: false,
-    title: 'Modern\nelvis', href: '/work/modern-elvis' },
+    title: 'Portrait\nphotography', href: '/work/modern-elvis', fill: true },
   // video = stummer Loop statt Standbild (img bleibt als Poster, bis das Video lädt)
   // href  = Ziel beim Klick (ohne Angabe → /work)
   { name: 'Imagefilm',              img: '/projects/imagefilm-web.jpg',               r: 2, c: 6, zoom: false,
-    title: 'Baubuero\nzam’',
+    title: 'Corporate\ndocumentary',
     video: '/projects/imagefilm/ImagefilmLanding.mp4', href: '/work/imagefilm' },
 ];
 
@@ -121,19 +122,19 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
             )}
 
             {img && (
-              <a href={img.href ?? '/work'} data-project={img.name} data-title={img.title} data-r={img.r} data-c={img.c} class="pf-tile group block h-full w-full" style={`--pi:${imgReadOrder.indexOf(img)}`} aria-label={linkLabel(img.href)}>
+              <a href={img.href ?? '/work'} data-project={img.name} data-title={img.title} data-r={img.r} data-c={img.c} class:list={['pf-tile group block h-full w-full', img.fill && 'pf-fill']} style={`--pi:${imgReadOrder.indexOf(img)}`} aria-label={linkLabel(img.href)}>
                 {img.video ? (
                   <video
                     src={img.video} poster={img.img} autoplay muted loop playsinline preload="auto"
                     aria-hidden="true"
-                    class={`pf-video h-full w-full object-cover opacity-70 transition-opacity duration-300 group-hover:opacity-100 ${img.zoom ? 'scale-150' : ''}`}
+                    class={`pf-video h-full w-full object-cover opacity-70 transition-opacity duration-300 group-hover:opacity-100 ${img.zoom ? 'scale-125' : ''}`}
                   ></video>
                 ) : (
                   <img
                     src={img.img}
                     alt={COVER_ALT[slugOf(img.href)] ?? ''}
                     loading="lazy"
-                    class={`h-full w-full object-cover opacity-70 transition-opacity duration-300 group-hover:opacity-100 ${img.zoom ? 'scale-150' : ''}`}
+                    class={`h-full w-full object-cover opacity-70 transition-opacity duration-300 group-hover:opacity-100 ${img.zoom ? 'scale-125' : ''}`}
                   />
                 )}
               </a>
@@ -305,7 +306,7 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
     const fixedEls = [...pfGrid.querySelectorAll('.pf-fixed')];   // Logo, Nav, Titel, Imprint, Privacy
     // Bilder/Videos: stehen fest an ihrem Platz (feste Größe, kein Neuberechnen pro Frame → kein
     // Zittern). Die Zelle ist nur das „Fenster" – wächst/schrumpft sie, ändert sich nur der Ausschnitt.
-    const tileMedia = [...pfGrid.querySelectorAll('.pf-tile')].map((a) => ({ el: a.querySelector('img, video'), r: +a.dataset.r, c: +a.dataset.c })).filter((t) => t.el);
+    const tileMedia = [...pfGrid.querySelectorAll('.pf-tile:not(.pf-fill)')].map((a) => ({ el: a.querySelector('img, video'), r: +a.dataset.r, c: +a.dataset.c })).filter((t) => t.el);
     const setBase = () => {   // Grundgröße einer Zelle (ohne Pulsieren/Hover) für die feste Mediengröße
       pfGrid.style.setProperty('--pf-cw', ((pfGrid.clientWidth - VLINES) / COLS).toFixed(2) + 'px');
       pfGrid.style.setProperty('--pf-ch', ((pfGrid.clientHeight - HLINES) / ROWS).toFixed(2) + 'px');
@@ -436,7 +437,7 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
      damit beim Pulsieren/Hovern nie ein Rand sichtbar wird) und sitzen mittig in ihrer Zelle.
      Die Zelle (overflow hidden) ist nur das Fenster → beim Wachsen/Schrumpfen ändert sich nur der Ausschnitt. */
   .pf-grid .pf-tile { position: relative; overflow: hidden; }
-  .pf-grid .pf-tile > img, .pf-grid .pf-tile > video {
+  .pf-grid .pf-tile:not(.pf-fill) > img, .pf-grid .pf-tile:not(.pf-fill) > video {
     position: absolute; left: 50%; top: 50%; max-width: none;
     width: calc(var(--pf-cw, 14vw) + 64px); height: calc(var(--pf-ch, 20vh) + 64px);
     margin-left: calc((var(--pf-cw, 14vw) + 64px) / -2); margin-top: calc((var(--pf-ch, 20vh) + 64px) / -2);
