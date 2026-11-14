@@ -944,7 +944,11 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
       };
       snapRaf = requestAnimationFrame(step);
     }
+    // Auf Touch-Geräten nicht nachziehen: Das programmierte Scrollen würde den natürlichen
+    // Schwung beim Wischen abwürgen → abgehacktes Scrollen.
+    const coarse = window.matchMedia('(pointer: coarse)').matches;
     function snap() {
+      if (coarse) return;
       const top = stage.getBoundingClientRect().top, t = -top / PIN;
       if (t <= 0.004 || t >= 0.996) return;                 // schon an einem Ende
       const stageTop = top + window.scrollY;
@@ -992,8 +996,11 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
         if (L != null) btn.classList.toggle('is-dark', L > 0.62);
       });
     }
-    setInterval(checkContrast, 400);
-    window.addEventListener('scroll', () => requestAnimationFrame(checkContrast), { passive: true });
+    // Nicht bei jedem Scroll-Bild messen (das Auslesen von Bildpunkten bremst das Scrollen, v. a. am
+    // iPhone) – sondern regelmäßig und kurz nachdem das Scrollen zur Ruhe kommt.
+    let cTimer = 0, lastScrollAt = 0;
+    setInterval(() => { if (performance.now() - lastScrollAt > 300) checkContrast(); }, 500);
+    window.addEventListener('scroll', () => { lastScrollAt = performance.now(); clearTimeout(cTimer); cTimer = setTimeout(checkContrast, 160); }, { passive: true });
 
     // Play-Button: Video abspielen (falls vorhanden)
     const play = document.getElementById('pdPlay');

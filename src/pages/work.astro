@@ -855,7 +855,7 @@ const categories = [
       animation: wp-fadein 0.6s ease backwards;
       animation-delay: calc(var(--i, 0) * 0.1s + 0.15s);
     }
-    .wp-cat.is-open .wp-cat-label { filter: none; }                                   /* aktiv: scharf */
+    .wp-cat.is-open .wp-cat-label { filter: none; font-size: 17vw; }                  /* aktiv: scharf, nur etwas größer (passt in die Breite + mittig in der Zeile) */
     .workpage.has-open .wp-cat:not(.is-open) .wp-cat-label { filter: blur(1.2vw); opacity: 0.5; }
 
     /* Galerie: klappt im Fluss auf (Höhe per JS animiert) */
