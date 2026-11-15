@@ -329,6 +329,7 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
   .pd-video {
     position: absolute; z-index: 2; overflow: hidden; background: #2a2622;
     will-change: left, top, width, height;
+    contain: layout paint;   /* Größenänderung beim Wachsen bleibt auf die Box beschränkt (schneller, v. a. iPhone) */
   }
   .pd-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .pd-poster-portrait { display: none; }   /* Hochformat-Cover nur mobil */
@@ -539,7 +540,7 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
   .pd-footer.is-active { pointer-events: auto; }
   .pd-footer-inner { display: contents; }
   .pd-footer-space { height: 100vh; }
-  @media (max-width: 767px) { .pd-footer-space { height: 200vh; } }   /* mobil: Footer steigt halb so schnell auf */   /* Scrollzone, in die man hineinscrollt */
+  @media (max-width: 767px) { .pd-footer-space { height: 100vh; } }   /* mobil: Footer steigt so schnell auf wie am Desktop */   /* Scrollzone, in die man hineinscrollt */
   .pd-footer-logo {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     padding-top: var(--pd-row);
@@ -743,9 +744,18 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
 
   // Maße, die nur von der Fenstergröße abhängen → bei Resize neu berechnen.
   let G = grid(), PIN = 800, metaEnd = 0;
+  // iPhone: Beim Scrollen fährt die Adressleiste ein/aus → innerHeight ändert sich ständig, alles
+  // würde neu vermessen und die Seite springen. Mobil gilt deshalb eine feste Höhe, die sich nur
+  // ändert, wenn sich die BREITE ändert (Drehen des Handys).
+  let stableH = window.innerHeight, stableW = window.innerWidth;
+  const viewH = () => {
+    if (mq.matches || window.innerWidth !== stableW) { stableW = window.innerWidth; stableH = window.innerHeight; }
+    return stableH;
+  };
+  let stageTop = 0;   // Oberkante der Bühne im Dokument (zwischengespeichert → beim Scrollen nichts messen)
   function measure() {
     G = grid();
-    const H = window.innerHeight, R = G.ROW;
+    const H = viewH(), R = G.ROW;
     metaEnd = Math.round(H / 2 - G.metaH / 2);   // Metazeile landet mittig im Bildschirm
     // Galerie: Metazeile + Leiste (3 Zeilen) als Block mittig unter dem Header → die ganze Leiste
     // inkl. Vollbild-Knopf unten rechts ist im Bild (Header = 1 Rasterzeile hoch)
@@ -765,6 +775,7 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
     const pinH = ((!isGal || !hasImp) && mq.matches) ? vidBottom : vidBottom + Math.max(0, Math.ceil((H - vidBottom) / R)) * R;
     pin.style.height = pinH + 'px';
     stage.style.height = PIN + pinH + 'px';
+    stageTop = stage.getBoundingClientRect().top + window.scrollY;
   }
 
   function apply(t) {
@@ -868,7 +879,7 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
   function onScroll() {
     if (header) header.classList.toggle('is-scrolled', window.scrollY > 4);
     if (!stage) return;
-    const y = -stage.getBoundingClientRect().top;
+    const y = window.scrollY - stageTop;   // ohne Messen (spart pro Bild eine komplette Layout-Berechnung)
     const t = clamp(y / PIN, 0, 1);
     apply(t);
     if (isGal) {
@@ -886,7 +897,9 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
       applyGal();
       // EN/DE-Schalter ausblenden, solange er auf der großen Leiste (Vollbild-Knopf) liegen würde
       const tg = document.querySelector('.lang-toggle');
-      if (tg && galBox) {
+      const nowT = performance.now();
+      if (tg && galBox && nowT - lastTgCheck > 200) {   // nur alle 0,2 s prüfen (Messen bremst das Scrollen)
+        lastTgCheck = nowT;
         const a = galBox.getBoundingClientRect(), b2 = tg.getBoundingClientRect();
         const hit = t > 0.3 && a.left < b2.right && a.right > b2.left && a.top < b2.bottom && a.bottom > b2.top;
         document.documentElement.classList.toggle('gal-pinned', hit);
@@ -894,6 +907,7 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
     }
     if (t > 0.01) startTeaser();   // sobald man zu scrollen beginnt: Clip starten
   }
+  let lastTgCheck = 0;
   function tick() { if (ticking) return; ticking = true; requestAnimationFrame(() => { ticking = false; onScroll(); }); }
 
   if (stage && pin && title && meta && video) {
@@ -934,7 +948,12 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
         }, { passive: true });
       }
     }
-    window.addEventListener('resize', () => { measure(); onScroll(); }, { passive: true });
+    window.addEventListener('resize', () => {
+      // mobil: reine Höhenänderung (Adressleiste) ignorieren → kein Springen beim Scrollen
+      if (!mq.matches && window.innerWidth === stableW) return;
+      measure(); onScroll();
+    }, { passive: true });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { stageTop = stage.getBoundingClientRect().top + window.scrollY; });
     measure(); onScroll();
 
     // ===== Magnetischer Anfang =====
@@ -1247,7 +1266,7 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
       const x = e.touches[0].clientX, now = performance.now();
       drag += x - tx; vx = (x - tx) / Math.max(1, now - tT); tx = x; tT = now;
     }, { passive: true });
-    const endTouch = () => { if (tx != null) push += vx * 260; tx = null; };   // Schwung beim Loslassen
+    const endTouch = () => { if (tx != null) push += vx * 260; tx = null; nextStep = performance.now() + 3200; };   // Schwung beim Loslassen
     imp.addEventListener('touchend', endTouch, { passive: true });
     imp.addEventListener('touchcancel', endTouch, { passive: true });
     // IMPRESSION-Feld = genau 1 Rasterspalte (Desktop 7, Mobile 4 Spalten)
@@ -1257,16 +1276,50 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
     // nur animieren, wenn die Leiste im Bild ist
     new IntersectionObserver(([en]) => { visible = en.isIntersecting; }).observe(imp);
 
+    // Mobil: Bilder auf ganze Rasterspalten bringen (Breite = n Spalten, Bild füllt per object-fit) →
+    // alle Kanten liegen auf den Rasterlinien. Die Leiste rückt dann spaltenweise weiter und rastet
+    // nach dem Wischen auf der nächsten Spalte ein.
+    const impImgs = () => [...impTrack.querySelectorAll('img')] as HTMLImageElement[];
+    let loopWC = 0;   // Breite einer Bildfolge (zwischengespeichert → nicht in jedem Bild messen)
+    const fitImp = () => {
+      const col = imp.clientWidth / 4, h = imp.clientHeight || col;
+      impImgs().forEach((im) => {
+        if (mq.matches) { im.style.width = ''; im.style.objectFit = ''; return; }
+        const ar = im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : 1.5;
+        const n = Math.max(1, Math.round((h * ar) / col));
+        im.style.width = `calc(${n * col}px - 1px)`; im.style.objectFit = 'cover';
+      });
+      loopWC = firstCopy ? (firstCopy as HTMLElement).offsetLeft : 0;
+    };
+    Promise.all(impImgs().map((im) =>
+      im.complete ? Promise.resolve() : new Promise((r) => { im.addEventListener('load', r, { once: true }); im.addEventListener('error', r, { once: true }); })
+    )).then(() => setTimeout(fitImp, 0));
+    window.addEventListener('resize', () => { if (!mq.matches && window.innerWidth === stableImpW) return; stableImpW = window.innerWidth; fitImp(); }, { passive: true });
+    let stableImpW = window.innerWidth;
+    let nextStep = performance.now() + 2600;   // mobil: nächstes spaltenweises Weiterrücken
+
     function impFrame(now) {
       const dt = Math.min((now - last) / 1000, 0.05); last = now;
       if (visible) {
-        const step = push * Math.min(1, dt * (tx == null && autoDrift() ? 3 : 7));   // Schub weich nachziehen
+        const mobileSteps = !mq.matches && autoDrift();
+        const step = push * Math.min(1, dt * (tx == null && autoDrift() ? (mobileSteps ? 5 : 3) : 7));   // Schub weich nachziehen
         push -= step;
-        const loopW = firstCopy ? firstCopy.offsetLeft : 0;            // Breite einer Bildfolge
+        const loopW = loopWC || (firstCopy ? (firstCopy as HTMLElement).offsetLeft : 0);   // Breite einer Bildfolge
+        if (!loopWC && loopW) loopWC = loopW;
+        if (loopW > 0 && mobileSteps && tx == null) {
+          const col = imp.clientWidth / 4;
+          if (Math.abs(push) < 0.5) {
+            if (now > nextStep) { push -= col; nextStep = now + 2600; }   // eine Spalte weiter (nach links)
+            else {
+              const px = pos * loopW, near = Math.round(px / col) * col;   // auf nächste Spalte einrasten
+              if (Math.abs(px - near) > 0.3) push += px - near;
+            }
+          }
+        }
         if (loopW > 0) {
           // Bewegung nach rechts schiebt die Leiste nach rechts (pos sinkt); Auto-Drift nach links,
-          // pausiert solange ein Finger auf der Leiste liegt
-          const drift = tx == null && autoDrift() ? DRIFT * dt : 0;
+          // pausiert solange ein Finger auf der Leiste liegt (mobil: statt Driften spaltenweise)
+          const drift = tx == null && autoDrift() && !mobileSteps ? DRIFT * dt : 0;
           pos = (((pos + (drift - step - drag) / loopW) % 1) + 1) % 1;
           drag = 0;
           impTrack.style.transform = `translateX(${(-pos * loopW).toFixed(1)}px)`;
@@ -1357,8 +1410,10 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
   const FOOTER_DAMP = 0.35;   // Mausrad in der Fußzone gedämpft (gleiches Gefühl wie Work)
   if (main && footer && footerSpace) {
     const footerStart = () => footerSpace.offsetTop - window.innerHeight;   // Beginn der Fußzone
+    let mainH = main.offsetHeight;   // Höhe zwischenspeichern (ResizeObserver) statt bei jedem Scroll-Bild zu messen
+    if ('ResizeObserver' in window) new ResizeObserver(() => { mainH = main.offsetHeight; setStickyTop(); }).observe(main);
     function setStickyTop() {
-      const v = Math.min(0, window.innerHeight - main.offsetHeight) + 'px';   // Desktop UND mobil (wie About)
+      const v = Math.min(0, window.innerHeight - mainH) + 'px';   // Desktop UND mobil (wie About)
       if (main.style.top !== v) main.style.top = v;   // nur bei Änderung schreiben
     }
     function applyFooter() {
