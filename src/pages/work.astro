@@ -20,12 +20,14 @@ import { COVER_ALT as ALT } from '../data/projects';
 // alt = Bildbeschreibung für Screenreader.
 
 const categories = [
-  // Reihenfolge = Reihenfolge auf der Seite · Anzahl Projekte: GRAPHIC 1 · FILM 2 · MOTION 2 · 3D 1 · PHOTO 2
+  // Reihenfolge = Reihenfolge auf der Seite · Anzahl Projekte: GRAPHIC 2 · FILM 2 · MOTION 2 · 3D 1 · PHOTO 1
   {
     label: 'GRAPHIC', slug: 'graphic',
     projects: [
       { img: "/projects/branding zam'/BrandingCover.png", href: '/work/branding-zam', ar: 3016 / 1686,
         lines: ['BAUBUERO ZAM’'], sub: 'corporate design', alt: ALT['branding-zam'] },
+      { img: '/projects/21/CoverLP2-web.jpg', href: '/work/21-1', ar: 2200 / 1467,
+        lines: ['21/1'], sub: 'exhibition / merch design', alt: ALT['21-1'] },
     ],
   },
   {
@@ -60,8 +62,6 @@ const categories = [
       // Querformat-Ausschnitt wie oben auf der Projektseite (Startbild der Galerie)
       { img: '/projects/foto portraits/Coverbild-web.jpg', href: '/work/modern-elvis', ar: 16 / 9, pos: '50% 34.5%',
         lines: ['MODERN ELVIS'], sub: 'portraits', alt: ALT['modern-elvis'] },
-      { img: '/projects/foto comeback/Coverbild-web.jpg', href: '/work/comeback', ar: 2400 / 1738,
-        lines: ['COMEBACK'], sub: 'fashion genre', alt: ALT['comeback'] },
     ],
   },
 ];

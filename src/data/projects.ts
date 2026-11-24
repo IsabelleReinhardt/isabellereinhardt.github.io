@@ -17,7 +17,9 @@ export interface Project {
     // Galerie statt Einzel-Video (z. B. Branding): Bilder/Videos nebeneinander in einer Leiste.
     // Wächst beim Scrollen auf 3 Rasterzeilen, danach scrollt man durch die Leiste.
     // ar = Seitenverhältnis (Breite / Höhe), poster = Standbild für Videos (optional).
-    gallery?: { src: string; type: 'image' | 'video'; ar: number; poster?: string; imgStyle?: string; alt?: string }[];
+    gallery?: { src: string; type: 'image' | 'video' | 'stack'; ar: number; poster?: string; imgStyle?: string; alt?: string;
+                // type 'stack': zwei Bilder übereinander in einer Spalte (oben/unten, je halbe Höhe)
+                stack?: { src: string; alt?: string; imgStyle?: string }[] }[];
     galleryCenter?: number;  // Galerie zentriert um dieses Element (z. B. 3 Porträts), ohne Mausrad-Leiste
     galleryRows?: number;    // Höhe der großen Galerie in Rasterzeilen (Standard 3)
     galleryFill?: boolean;   // Desktop: alle Galerie-Bilder teilen sich die volle Breite (angeschnitten)
@@ -43,7 +45,7 @@ export interface Project {
 const BZ = "/projects/branding zam'";
 const OR = "/projects/orbit musikvideo";
 const PT = '/projects/foto portraits';
-const CB = '/projects/foto comeback';
+const P21 = '/projects/21';
 const D3 = '/projects/3d character';
 const LA = '/projects/logo animation';
 
@@ -237,38 +239,45 @@ export const projects: Project[] = [
     ],
   },
   {
-    slug: 'comeback',
-    title: 'Comeback',
-    category: 'Photo\ngraphy',
-    date: 'jan\n2025',
-    type: 'course\nproject',
+    slug: '21-1',
+    title: '21/1',
+    category: 'Exhibition/\nMerch Design',
+    date: 'oct to nov\n2026',
+    type: 'free\nwork',
     role: 'group\nwork',
-    tools: 'Photoshop\nSONY 6600',
-    credits: 'Comeback Vintage',
-    cover: `${CB}/Coverbild-web.jpg`,
-    coverPos: '50% 25.6%',
+    tools: 'Adobe Illustrator\nAdobe InDesign\nAdobe Photoshop',
+    credits: 'Tamara Bock',
+    cover: `${P21}/CoverLP2-web.jpg`,
     hero: {
-      poster: `${CB}/Coverbild-web.jpg`,
-      // Leiste wie beim Branding: 3 Zeilen hoch, mit Mausrad/Wischen verschiebbar
+      poster: `${P21}/CoverLP2-web.jpg`,
+      // Leiste wie im Figma-Frame: Ausstellung · [Shirt-Detail / Sticker] · Rücken · Shirt vorne ·
+      // [Shirt-Detail / Text 21/1] · Sticker an der Laterne. Start = das Shirt-Detail (CoverLP2) in der
+      // 2. Spalte – beim Wachsen schiebt sich darunter das Sticker-Bild hinein, links erscheint die Ausstellung.
       gallery: [
-        { src: `${CB}/Coverbild-web.jpg`, type: 'image', ar: 2400 / 1738, alt: 'Mirrored fashion collage of a model in a red beret, white shirt and red boots' },
-        ...[
-          'Fashion collage of a model in a red beret and white shirt, mirrored top to bottom',
-          'Two models in colourful knitwear and platform boots posing on the floor',
-          'Three models in black leather jackets photographed from above',
-          'Three models in red tops and wide jeans arranged into a collage',
-        ].map((alt, k) => ({ src: `${CB}/Bild${k + 2}-web.jpg`, type: 'image' as const, ar: 2 / 3, alt })),
+        { src: `${P21}/CoverLP1-web.jpg`, type: 'image', ar: 2 / 3, imgStyle: 'object-position: 50% 40%', alt: 'Exhibition wall with two printed shirts, photos and stickers; a woman pins up a picture' },
+        { src: `${P21}/CoverLP2-web.jpg`, type: 'stack', ar: 0.75, stack: [
+          { src: `${P21}/CoverLP2-web.jpg`, alt: 'Close-up of a black shirt with a small square hand motif', imgStyle: 'object-position: 50% 52%' },
+          { src: `${P21}/Bild1-web.jpg`, alt: 'Pink stickers with the 21/1 motifs on crumpled foil' },
+        ] },
+        { src: `${P21}/Bild2-web.jpg`, type: 'image', ar: 2 / 3, imgStyle: 'object-position: 50% 45%', alt: 'Back view of a woman wearing the black 21/1 shirt with the hand motif' },
+        { src: `${P21}/Bild3-web.jpg`, type: 'image', ar: 2 / 3, imgStyle: 'object-position: 50% 40%', alt: 'White 21/1 shirt with the mdma print on a hanger' },
+        { src: `${P21}/Bild4-web.jpg`, type: 'stack', ar: 0.75, stack: [
+          { src: `${P21}/Bild4-web.jpg`, alt: 'Detail of a white shirt with a small printed line of text', imgStyle: 'object-position: 50% 22%' },
+          { src: `${P21}/Bild5-web.jpg`, alt: 'Exhibition text: 21/1 – about a few days in a villa in Tuscany' },
+        ] },
+        { src: `${P21}/Bild6-web.jpg`, type: 'image', ar: 3 / 4, imgStyle: 'object-position: 50% 45%', alt: '21/1 stickers on a street lamp post' },
       ],
+      galleryCenter: 1,   // startet mit dem Shirt-Detail (2. Spalte), die Ausstellung liegt links daneben
     },
     body: [
-      "Based on the assignment in the photography module to develop an independent photo series within a genre of our choice, we decided on fashion with a distinctive Y2K and 90s aesthetic.",
-      "As we had no suitable clothing at first, we proactively approached local second-hand stores and offered them the finished photos in exchange for loaned pieces. The store “Comeback” responded very openly, and a successful collaboration began.",
-      "After the successful shoot, we deliberately experimented in post-production to build our image-editing skills. The targeted use of collages created an experimental, modern look.",
+      "In August 2026, my degree programme went on an excursion to Tuscany. Part of the trip was to design a project that would then be shown at an exhibition opening in November. For this, I teamed up with a friend to create a merch design.",
+      "While developing it, we worked closely together on the typography and graphics. The motifs are inspired by our time in Tuscany. I took on the shirt with the hand motif, created the matching sticker design and took care of the photos of the finished prints.",
+      "We conceived and designed the exhibition of the shirts for the Tuscany vernissage together. In the end, our exhibition featured two shirts screen-printed in Ravensburg, sticker designs and a photo series documenting the printing process and the finished shirts.",
     ],
     bodyDe: [
-      "Ausgehend von der Aufgabe aus dem Modul Fotografie, eine eigenständige Fotoreihe innerhalb eines selbst gewählten Genres zu entwickeln, entschieden wir uns für den Bereich Mode mit einer markanten Y2K- und 90er-Jahre-Ästhetik.",
-      "Da anfangs keine passenden Kleidungsstücke vorhanden waren, traten wir proaktiv an lokale Secondhand-Stores heran und boten ihnen die fertigen Bilder im Austausch gegen Leihgaben an. Der Store „Comeback“ reagierte äußerst offen, wodurch eine erfolgreiche Kooperation gestartet werden konnte.",
-      "Nach dem erfolgreichen Shooting experimentierten wir in der Postproduktion bewusst kreativ, um unsere Bildbearbeitungs-Skills auszubauen. Durch den gezielten Einsatz von Collagen entstand ein experimenteller, moderner Look.",
+      "Im August 2026 hatte mein Studiengang eine Exkursion in die Toskana. Teil dieser Exkursion ist es, ein Projekt zu gestalten, das dann im November in einer Vernissage Platz findet. Hierfür habe ich mich mit einer Freundin zusammengeschlossen, um ein Merch-Design zu machen.",
+      "Bei der Ausarbeitung haben wir uns eng abgesprochen, was die Gestaltung durch Schrift und Grafiken angeht. Die Motive sind von der Zeit in der Toskana inspiriert. Ich habe das Shirt mit dem Hand-Motiv übernommen, das zugehörige Sticker-Design gemacht und mich um Fotos der fertig gedruckten Shirts gekümmert.",
+      "Die Ausstellung der Shirts für die Toskana-Vernissage haben wir gemeinsam konzipiert und gestaltet. Schlussendlich beinhaltet unsere Ausstellung zwei in Ravensburg siebgedruckte Shirts, Sticker-Designs und eine Fotoreihe, die den Druckprozess sowie die fertigen Shirts festhält.",
     ],
   },
   {
@@ -311,6 +320,6 @@ export const COVER_ALT: Record<string, string> = {
   'logo-animation': 'Still from the Armed Angels logo animation: a yellow line drawing of jeans next to a hand in a back pocket',
   'ayra':           'The 3D character Ayra standing in a T-pose on a round platform with a stool and a small workbench',
   'modern-elvis':   'Black-and-white studio portrait of a young man in a leather jacket sitting on the floor',
-  'comeback':       'Mirrored fashion collage of a model in a red beret, white shirt and red boots, shown upside down',
+  '21-1':           'Close-up of a black shirt with a small square hand motif from the 21/1 merch design',
   'kurzfilm':       'Still from the short film Reset',
 };

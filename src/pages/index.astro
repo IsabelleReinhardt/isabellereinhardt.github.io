@@ -17,7 +17,8 @@ const linkLabel = (href?: string) => {
 const projects = [
   // Branding: Titelvideo (kleine Fassung in deinem Ordner „branding zam'"), Standbild = BrandingCover
   // title = angezeigter Titel beim Hover/Antippen (\n = Zeilenumbruch); ohne title wird name gezeigt
-  // fill: true = Bild füllt wie früher seine Zelle (ohne festen Platz) – Ayra, Comeback, Modern Elvis
+  // fill: true = Bild füllt wie früher seine Zelle (ohne festen Platz) – Ayra, 21/1, Modern Elvis
+  // pos = Bildausschnitt (object-position), optional
   { name: 'Branding',                img: "/projects/branding zam'/BrandingCover.png", r: 2, c: 4, zoom: true,
     title: 'Corporate\ndesign',
     video: "/projects/branding zam'/LogoSchnittMotionLanding.mp4", href: '/work/branding-zam' },
@@ -28,8 +29,8 @@ const projects = [
   { name: 'Orbit',                   img: '/projects/motion-musikvideo-web.jpg',       r: 3, c: 7, zoom: false,
     title: 'Music\nvideo',
     video: '/projects/orbit musikvideo/OrbitLanding.mp4', href: '/work/orbit' },
-  { name: 'Comeback',                img: '/projects/foto comeback/Coverbild-web.jpg',   r: 5, c: 2, zoom: false,
-    title: 'Genre\nphotography', href: '/work/comeback', fill: true },
+  { name: '21/1',                    img: '/projects/21/CoverLP1-web.jpg',             r: 5, c: 2, zoom: false,
+    title: 'Merch\ndesign', href: '/work/21-1', fill: true, pos: '50% 38%' },
   { name: '3D Ayra',                 img: '/projects/3d character/0001.jpg',       r: 4, c: 6, zoom: false,
     title: '3D\ncharacter', href: '/work/ayra', fill: true },
   { name: 'Portrait Foto',           img: '/projects/foto portraits/Coverbild-web.jpg',   r: 4, c: 5, zoom: false,
@@ -52,7 +53,7 @@ const imgReadOrder = [...projects].sort((a, b) => a.r - b.r || a.c - b.c);
 const P = (name) => projects.find((p) => p.name === name)!;
 
 // Bild-Kacheln füllen die 'img'-Plätze der Reihe nach (oben→unten, links→rechts) — Anordnung wie Figma.
-const mImgOrder = ['Branding', 'Portrait Foto', 'Imagefilm', '3D Ayra', 'Logo Animation', 'Orbit', 'Comeback'];
+const mImgOrder = ['Branding', 'Portrait Foto', 'Imagefilm', '3D Ayra', 'Logo Animation', 'Orbit', '21/1'];
 
 // Layout-Matrix (je 4 Kacheln): 'img' · 'name' · 'impr' · 'priv' · '' (leer).
 // Kopfzeile (Logo + WORK/ABOUT/CONTACT) liegt jetzt im fixierten <MobileHeader>.
@@ -134,6 +135,7 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
                     src={img.img}
                     alt={COVER_ALT[slugOf(img.href)] ?? ''}
                     loading="lazy"
+                    style={img.pos ? `object-position:${img.pos}` : undefined}
                     class={`h-full w-full object-cover opacity-70 transition-opacity duration-300 group-hover:opacity-100 ${img.zoom ? 'scale-125' : ''}`}
                   />
                 )}
@@ -218,6 +220,7 @@ const cols = [1, 2, 3, 4, 5, 6, 7];
                     src={cell.p.img}
                     alt={COVER_ALT[slugOf(cell.p.href)] ?? ''}
                     loading="lazy"
+                    style={cell.p.pos ? `object-position:${cell.p.pos}` : undefined}
                     class={`m-img h-full w-full object-cover opacity-70 transition-opacity duration-300 ${cell.p.zoom ? 'scale-150' : ''}`}
                   />
                 )}

@@ -103,6 +103,14 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
                             <video class="pd-gal-media pd-gal-auto" src={g.src} poster={g.poster} preload="none" muted loop playsinline></video>
                           )}
                         </Fragment>
+                      ) : g.type === 'stack' && g.stack ? (
+                        <div class="pd-gal-stack">
+                          {g.stack.map((st, j) => (
+                            <div class:list={['pd-stk', j === 0 ? 'pd-stk-top' : 'pd-stk-bot']}>
+                              <img class="pd-gal-media" src={st.src} alt={st.alt ?? ''} loading={k < 3 ? 'eager' : 'lazy'} style={st.imgStyle} />
+                            </div>
+                          ))}
+                        </div>
                       ) : (
                         <img class="pd-gal-media" src={g.src} alt={g.alt ?? ''} loading={k < 3 ? 'eager' : 'lazy'} style={g.imgStyle} />
                       )}
@@ -578,6 +586,12 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
   .pd-gal-item:first-child, .pd-gal-item.is-grow { aspect-ratio: auto; }   /* Breite setzt das JS (wächst von Startbox → Seitenverhältnis) */
   .is-gal-center .pd-gal-item:first-child:not(.is-grow) { aspect-ratio: var(--ar); }
   .pd-gal-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* Gestapelte Spalte (z. B. 21/1): zwei Bilder übereinander. Ist die Spalte das Startbild, zeigt das
+     obere Bild anfangs die ganze Box und macht beim Wachsen (--t → 1) Platz für das untere (je halbe Höhe). */
+  .pd-gal-stack { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 1px; background: var(--color-off); }
+  .pd-stk { position: relative; overflow: hidden; min-height: 0; }
+  .pd-stk-top { flex: 0 0 calc(50% + 50% * (1 - var(--t, 1)) - 0.5px); }
+  .pd-stk-bot { flex: 1 1 0; }
   .pd-gal-full { right: 18px; bottom: 16px; }
   html.gal-pinned .lang-toggle { opacity: 0; pointer-events: none; }
   .lang-toggle { transition: opacity .3s ease; }
@@ -1114,11 +1128,16 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
       const lbCount = document.getElementById('pdLbCount');
       const galFull = document.getElementById('pdGalFull');
       // Inhalte der Leiste: je Element Quelle + Typ (bei Videos das <video>, sonst das Bild)
-      const slides = galItems.map((fig) => {
+      // gestapelte Spalten liefern zwei Bilder → itemSlide merkt sich, wo jede Spalte im Vollbild beginnt
+      const itemSlide: number[] = [];
+      const slides = galItems.flatMap((fig) => {
         const v = fig.querySelector('video');
-        return v ? { type: 'video', src: v.getAttribute('src'), poster: v.getAttribute('poster') }
-                 : { type: 'image', src: fig.querySelector('img').getAttribute('src'), alt: fig.querySelector('img').alt };
+        const list = v ? [{ type: 'video', src: v.getAttribute('src'), poster: v.getAttribute('poster') }]
+          : [...fig.querySelectorAll('img.pd-gal-media')].map((im) => ({ type: 'image', src: im.getAttribute('src'), alt: (im as HTMLImageElement).alt }));
+        itemSlide.push(-1);
+        return list;
       });
+      { let n = 0; galItems.forEach((fig, k) => { itemSlide[k] = n; n += fig.querySelector('video') ? 1 : fig.querySelectorAll('img.pd-gal-media').length; }); }
       // zusätzliche Bilder nur fürs Vollbild (z. B. Hochformate bei Comeback)
       (video.dataset.lbExtra || '').split('|').filter(Boolean).forEach((src) => slides.push({ type: 'image', src, alt: '' }));
       let cur = 0;
@@ -1156,7 +1175,7 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
         else if (e.key === 'ArrowLeft') show(cur - 1);
       };
       const open = () => {
-        show(visibleIndex());
+        show(itemSlide[visibleIndex()] ?? 0);
         lb.hidden = false;
         document.documentElement.style.overflow = 'hidden';
         document.addEventListener('keydown', onKey);
