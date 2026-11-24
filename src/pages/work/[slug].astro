@@ -827,6 +827,10 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
       if (galC >= 0 && galTrack) {
         const boxW = lerp(w0, w1, t), el = galItems[galGrow];
         galXC = boxW / 2 - (el.offsetLeft + parseFloat(wNew) / 2);
+        // Ist die Leiste am Ende breiter als die Box (z. B. 21/1), endet sie linksbündig (1. Bild am
+        // linken Rand). Damit sie dort nicht ruckartig hinspringt, gleitet sie schon beim Wachsen hin.
+        galOverEnd = h > 0 && (galTrack.scrollWidth / h) * h1 > w1 + 1;
+        galTgrow = t;
         applyCenter();
       }
     }
@@ -847,8 +851,16 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
     if (over <= 1) return [0, 0];
     return [galXC, galXC + over];
   }
+  let galOverEnd = false, galTgrow = 0;
   function applyCenter() {
     if (!galTrack) return;
+    if (galOverEnd && galTgrow < 0.98) {
+      // während des Wachsens: von „Startbild mittig“ weich zu „linksbündig“ (= Anfang der Leiste)
+      const e = galTgrow * galTgrow * (3 - 2 * galTgrow);   // sanft ein- und auslaufen
+      galOff = galTarget = galXC * e;
+      galTrack.style.transform = `translate3d(${(galXC - galOff).toFixed(1)}px,0,0)`;
+      return;
+    }
     const [lo, hi] = galRange();
     galTarget = clamp(galTarget, lo, hi); galOff = clamp(galOff, lo, hi);
     galTrack.style.transform = `translate3d(${(galXC - galOff).toFixed(1)}px,0,0)`;
