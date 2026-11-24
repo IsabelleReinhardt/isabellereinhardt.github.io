@@ -262,7 +262,7 @@ export const projects: Project[] = [
         { src: `${P21}/Bild2-web.jpg`, type: 'image', ar: 2 / 3, imgStyle: 'object-position: 50% 45%', alt: 'Back view of a woman wearing the black 21/1 shirt with the hand motif' },
         { src: `${P21}/Bild3-web.jpg`, type: 'image', ar: 2 / 3, imgStyle: 'object-position: 50% 40%', alt: 'White 21/1 shirt with the mdma print on a hanger' },
         { src: `${P21}/Bild4-web.jpg`, type: 'stack', ar: 0.75, stack: [
-          { src: `${P21}/Bild4-web.jpg`, alt: 'Detail of a white shirt with a small printed line of text', imgStyle: 'object-position: 50% 22%' },
+          { src: `${P21}/Bild4-web.jpg`, alt: 'Detail of a white shirt with a small printed line of text', imgStyle: 'object-position: 50% 0%; transform: scale(1.6); transform-origin: 50% 53%' },
           { src: `${P21}/Bild5-web.jpg`, alt: 'Exhibition text: 21/1 – about a few days in a villa in Tuscany' },
         ] },
         { src: `${P21}/Bild6-web.jpg`, type: 'image', ar: 3 / 4, imgStyle: 'object-position: 50% 45%', alt: '21/1 stickers on a street lamp post' },
