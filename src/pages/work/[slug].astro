@@ -1284,6 +1284,17 @@ const galCenter = project.hero.galleryCenter ?? -1;   // ≥ 0: Galerie zentrier
       lastX = e.clientX;
     }, { passive: true });
     document.addEventListener('mouseleave', () => { lastX = null; });
+    // Desktop: liegt die Maus auf der Leiste, lässt sie sich seitlich scrollen (Trackpad waagerecht
+    // wischen oder Shift + Mausrad). Senkrechtes Scrollen bleibt beim Seiten-Scroll.
+    imp.addEventListener('wheel', (e) => {
+      if (!overImp) return;
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerWidth : 1;
+      let dx = e.deltaX * unit;
+      if (e.shiftKey && Math.abs(dx) < Math.abs(e.deltaY)) dx = e.deltaY * unit;   // Shift + Rad
+      if (Math.abs(dx) < 0.5 || (!e.shiftKey && Math.abs(e.deltaX) < Math.abs(e.deltaY))) return;
+      e.preventDefault();          // kein Zurück-Wischen des Browsers
+      push -= dx;                  // nach links wischen → Bilder laufen nach links
+    }, { passive: false });
     // Mobil / Touch: die Leiste läuft von selbst langsam weiter (Auto-Drift) und lässt sich seitwärts
     // wischen – der Finger zieht sie 1:1 mit, beim Loslassen gleitet sie mit Schwung aus.
     // Senkrecht wischen scrollt weiter die Seite (touch-action: pan-y im CSS).
