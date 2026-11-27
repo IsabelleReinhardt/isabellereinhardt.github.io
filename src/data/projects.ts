@@ -113,12 +113,12 @@ export const projects: Project[] = [
     },
     body: [
       "As a direct extension of the preceding image film, I developed a corporate design for <a href=\"https://www.baubuerozam.de\" target=\"_blank\" rel=\"noopener\">www.baubuerozam.de</a> that laid the foundation for the start-up’s long-term brand presence – both for a website and for the Instagram channel @baubuerozam.",
-      "In close consultation, I analysed the desired external image: despite the focus on sustainable straw-bale construction, the design was meant to feel deliberately modern and minimal rather than overtly “eco”. I developed logo variations using the letters zam and defined binding colour palettes and typography rules.",
+      "In close consultation, I analysed the desired external image: despite the focus on sustainable straw-bale construction, the design was meant to feel deliberately modern and minimal rather than overtly “eco”. I developed logo variations using the letters zam, with a grid derived from the stroke width of the letters themselves, and defined binding colour palettes and typography rules.",
       "As the process went on, I extended the identity with matching social media templates. Working directly with real clients showed me how valuable close communication is and how to translate wishes, step by step, into a coherent design.",
     ],
     bodyDe: [
       "Als direkte Erweiterung des vorausgegangenen Imagefilms habe ich ein Corporate Design für <a href=\"https://www.baubuerozam.de\" target=\"_blank\" rel=\"noopener\">www.baubuerozam.de</a> entwickelt, das den Grundbaustein für den langfristigen Markenauftritt des Start-ups bildete – sowohl für eine Website als auch für den Instagram-Kanal @baubuerozam.",
-      "In intensiven Abstimmungen analysierte ich die gewünschte Außenwirkung: Trotz des Schwerpunkts auf dem nachhaltigen Strohbau sollte das Design bewusst modern und schlicht statt plakativ „öko“ wirken. Ich entwickelte Logovarianten mit den Buchstaben zam und definierte verbindliche Farbpaletten sowie Typografie-Regeln.",
+      "In intensiven Abstimmungen analysierte ich die gewünschte Außenwirkung: Trotz des Schwerpunkts auf dem nachhaltigen Strohbau sollte das Design bewusst modern und schlicht statt plakativ „öko“ wirken. Ich entwickelte Logovarianten mit den Buchstaben zam, deren Raster sich aus der Strichstärke der Buchstaben selbst ableitet, und definierte verbindliche Farbpaletten sowie Typografie-Regeln.",
       "Im laufenden Prozess ergänzte ich den Auftritt um passende Social-Media-Templates. Die direkte Zusammenarbeit mit echten Kunden hat mir gezeigt, wie wertvoll eine enge Absprache ist und wie man Wünsche Schritt für Schritt in ein stimmiges Design übersetzt.",
     ],
   },
